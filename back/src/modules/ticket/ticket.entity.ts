@@ -17,7 +17,4 @@ export class Ticket {
 
   @Column({ nullable: true })
   dynamicConfig?: string; // JSON for dynamic features like roulette, discount type, QR redirect
-
-  @CreateDateColumn()
-  createdAt!: Date;
 }

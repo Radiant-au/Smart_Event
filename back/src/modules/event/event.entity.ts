@@ -10,6 +10,9 @@ export class Events {
   @Column()
   name!: string;
 
+  @Column({unique : true})
+  code!: string;
+
   @Column({ nullable: true })
   description?: string;
 
