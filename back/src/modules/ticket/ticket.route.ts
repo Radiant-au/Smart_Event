@@ -1,0 +1,12 @@
+import { Router } from "express";
+import { TicketController } from "./ticket.controller";
+
+const router = Router();
+
+const ticketController = new TicketController();
+
+router.post("/dynamic/:token", ticketController.addDynamicData);
+router.post("/validate", ticketController.validateScan);
+
+
+export default router;  

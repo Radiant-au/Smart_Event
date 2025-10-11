@@ -11,8 +11,6 @@ app.use(errorHandler)
 app.use(express.json());
 app.use('/api', route);
 
-// Routes
-// app.use("/api/users", userRoutes);
 
 // DB connection
 AppDataSource.initialize()
