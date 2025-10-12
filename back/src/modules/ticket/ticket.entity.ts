@@ -6,7 +6,7 @@ export class Ticket {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => TicketBatch, (batch) => batch.tickets, { onDelete: "CASCADE" })
+  @ManyToOne(() => TicketBatch, (batch) => batch.tickets ,  { onDelete: "CASCADE" })
   batch!: TicketBatch;
 
   @Column({ unique: true })
