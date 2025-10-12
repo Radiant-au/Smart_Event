@@ -9,4 +9,4 @@ router.post("/dynamic/:token", ticketController.addDynamicData);
 router.post("/validate", ticketController.validateScan);
 
 
-export default router;  
+export default router;      
