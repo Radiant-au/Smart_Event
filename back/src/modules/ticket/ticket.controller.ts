@@ -3,6 +3,7 @@ import { asyncHandler } from "../../utils/handler";
 import { TicketService } from "./ticket.services";
 
 export class TicketController {
+    
     private ticketService = new TicketService();
 
     constructor() {
@@ -14,7 +15,7 @@ export class TicketController {
         res.status(201).json({ success: true, data: ticket });
     });
 
-    validateScan     = asyncHandler(async (req: Request, res: Response) => {
+    validateScan = asyncHandler(async (req: Request, res: Response) => {
         const ticket = await this.ticketService.validateScan(req.body);
         res.status(201).json({ success: true, data: ticket });
     });

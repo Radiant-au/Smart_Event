@@ -15,12 +15,14 @@ export class EventController {
     });
 
     addCollaborator = asyncHandler(async (req: Request, res: Response) => {
-        const event = await this.eventService.addCollaborator(req.body.eventId, req.body.userId);
+        const userId = Number(req.params.user);
+        const eventId = Number(req.params.event);
+        const event = await this.eventService.addCollaborator(eventId, userId);
         res.status(201).json({ success: true, data: event });
     });
 
     removeCollaborator = asyncHandler(async (req: Request, res: Response) => {
-        const event = await this.eventService.removeCollaborator(req.body.eventId, req.body.userId);
+        const event = await this.eventService.removeCollaborator(Number(req.params.event), Number(req.params.user));
         res.status(201).json({ success: true, data: event });
     });
 }

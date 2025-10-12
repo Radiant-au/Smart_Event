@@ -1,4 +1,4 @@
-import { AddDynamicDto, addQrDataDto, ScanDto, TicketDto } from "./ticket.dto";
+import { AddDynamicDto, ScanDto, TicketDto } from "./ticket.dto";
 import { Ticket } from "./ticket.entity";
 import { BaseService } from "../../utils/base.services";
 import { v4 as uuidv4 } from 'uuid';
@@ -12,19 +12,20 @@ export class TicketService extends BaseService<Ticket>{
         super(Ticket);
     }
 
-   async generate(ticketsDto: TicketDto) {
+   async generate(ticketsDto: TicketDto , dystatus: boolean) {
         const tickets: Ticket[] = [];
         for (let i = 0; i < ticketsDto.ticket_number; i++) {
             const newTicket = new Ticket();
             newTicket.batch = ticketsDto.batch;
-            newTicket.code = ticketsDto.event_code + `00${i + 1}`;
+            newTicket.code = ticketsDto.event_code + (dystatus ? "D" : "") + `00${i + 1}`;
             tickets.push(newTicket);
         }
         return await this.repo.insert(tickets);
     }
 
     async addRouletteData(qrtoken :string , dto: AddDynamicDto) {
-        const ticket = await this.repo.findOneByOrFail({ qrToken: qrtoken });
+        const ticket = await this.repo.findOneOrFail({ where: { qrToken: qrtoken }, relations: ['batch.roulette'] });
+
         const rouletteResult = this.rouletteResultRepo.create({
             ticket: ticket,
             roulette: ticket.batch.roulette,
@@ -35,9 +36,9 @@ export class TicketService extends BaseService<Ticket>{
         return await this.repo.save(ticket);
     }
 
-    async addQrData(dto: addQrDataDto) {
+    async addQrData(batchId : number) {
         const tickets = await this.repo.find({
-            where: { batch: { id: dto.ticketBatch, event: { id: dto.eventId } } },
+            where: { batch: { id: batchId}},
             relations: ['batch.event']
         });
         for (const ticket of tickets) {
@@ -49,7 +50,7 @@ export class TicketService extends BaseService<Ticket>{
 
     async validateScan(dto : ScanDto){
         const ticket = await this.repo.findOneOrFail({ where: { code: dto.code }, relations: ['batch.event.creator', 'batch.event.collaborators'] });
-        const scanner = dto.userId;
+        const scanner = Number(dto.userId);
         if (scanner !== ticket.batch.event.creator.id && !ticket.batch.event.collaborators.some((collaborator) => collaborator.id === scanner)) {
             throw new Error("You are not the ticket creator or collaborator");
         }

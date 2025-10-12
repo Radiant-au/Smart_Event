@@ -11,7 +11,7 @@ export class TicketBatch {
   @ManyToOne(() => Events, (events) => events.ticketBatches, { onDelete: "CASCADE" })
   event!: Events; // Each batch belongs to an event
 
-  @OneToMany(() => Ticket, (ticket) => ticket.batch)
+  @OneToMany(() => Ticket, (ticket) => ticket.batch , { onDelete: "CASCADE"  , cascade: true})
   tickets!: Ticket[]; // Tickets in this batch
 
   @OneToOne(() => Roulette, (roulette) => roulette.batch, { nullable: true, cascade: true, onDelete: "CASCADE" })
@@ -31,7 +31,7 @@ export class TicketBatch {
   isActive!: boolean; // If this batch is valid/available
 
   @Column({ default: false })
-  dynamic!: boolean; // JSON for dynamic features like roulette, discount type, QR redirect
+  dynamic!: boolean; 
 
   @CreateDateColumn()
   createdAt!: Date;

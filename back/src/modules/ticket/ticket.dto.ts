@@ -4,12 +4,7 @@ export interface TicketDto {
     batch: TicketBatch;
     event_code: string;
     ticket_number: number; 
-}
-
-export interface addQrDataDto{
-    ticketBatch: number;
-    eventId:number;
-}
+}   
 
 export interface AddDynamicDto {
     dynamicResult?: string;

@@ -19,14 +19,14 @@ export class EventService extends BaseService<Events> {
   }
 
   async addCollaborator(eventId: number, userId: number) {
-    const event = await this.repo.findOneByOrFail({ id: eventId });
+    const event = await this.repo.findOneOrFail({ where: { id: eventId }, relations: ['collaborators'] });
     const user = await this.userRepo.findOneByOrFail({ id: userId });
     event.collaborators.push(user);
     return await this.repo.save(event);
   }
 
   async removeCollaborator(eventId: number, userId: number) {
-    const event = await this.repo.findOneByOrFail({ id: eventId });
+    const event = await this.repo.findOneOrFail({ where: { id: eventId }, relations: ['collaborators'] });
     const user = await this.userRepo.findOneByOrFail({ id: userId });
     event.collaborators = event.collaborators.filter((collaborator) => collaborator.id !== user.id);
     return await this.repo.save(event);
