@@ -1,0 +1,21 @@
+import { Request, Response } from "express";
+import { asyncHandler } from "../../utils/handler";
+import { TicketService } from "./ticket.services";
+
+export class TicketController {
+    private ticketService = new TicketService();
+
+    constructor() {
+        this.ticketService = new TicketService();
+    }
+
+    addDynamicData = asyncHandler(async (req: Request, res: Response) => {
+        const ticket = await this.ticketService.addRouletteData(req.params.token, req.body);
+        res.status(201).json({ success: true, data: ticket });
+    });
+
+    validateScan     = asyncHandler(async (req: Request, res: Response) => {
+        const ticket = await this.ticketService.validateScan(req.body);
+        res.status(201).json({ success: true, data: ticket });
+    });
+}

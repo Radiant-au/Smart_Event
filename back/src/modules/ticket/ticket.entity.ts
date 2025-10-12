@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { TicketBatch } from "../ticket_batch/ticket_batch.entity";
 
 @Entity()
@@ -16,8 +16,11 @@ export class Ticket {
   status!: string; // unused | used
 
   @Column({ nullable: true })
-  dynamicConfig?: string; // JSON for dynamic features like roulette, discount type, QR redirect
+  qrToken?: string;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+  @Column({ nullable: true })
+  qrUrl?: string;
+
+  @Column({ nullable: true })
+  dynamicResult?: string; // e.g. "VIP Access"s
 }

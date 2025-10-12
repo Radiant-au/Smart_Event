@@ -15,7 +15,7 @@ export class User {
   @Column()
   password!: string;
 
-  @OneToMany(() => Events, (events) => events.user)
+  @OneToMany(() => Events, (events) => events.creator)
   events!: Events[];
 
   @CreateDateColumn()

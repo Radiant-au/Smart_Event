@@ -1,6 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, OneToOne, JoinColumn } from "typeorm";
 import { Ticket } from "../ticket/ticket.entity";
 import { Events } from "../event/event.entity";
+import { Roulette } from "../roulette/roulette.entity";
 
 @Entity("ticket_batches")
 export class TicketBatch {
@@ -13,6 +14,13 @@ export class TicketBatch {
   @OneToMany(() => Ticket, (ticket) => ticket.batch)
   tickets!: Ticket[]; // Tickets in this batch
 
+  @OneToOne(() => Roulette, (roulette) => roulette.batch, { nullable: true, cascade: true, onDelete: "CASCADE" })
+  @JoinColumn()
+  roulette?: Roulette; // Only exists if batch is dynamic
+
+  @Column({ nullable: true })
+  dynamicUrl?: string; // e.g. https://smart-events.com/roulette/spin/{ticketCode}
+
   @Column()
   name!: string; // e.g., "VIP 5000 Kyats", "Regular 2000 Kyats"
 
@@ -22,8 +30,8 @@ export class TicketBatch {
   @Column({ default: true })
   isActive!: boolean; // If this batch is valid/available
 
-  @Column({ nullable: true })
-  dynamicConfig?: string; // JSON for dynamic features like roulette, discount type, QR redirect
+  @Column({ default: false })
+  dynamic!: boolean; // JSON for dynamic features like roulette, discount type, QR redirect
 
   @CreateDateColumn()
   createdAt!: Date;
