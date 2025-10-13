@@ -19,27 +19,30 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     super(TicketBatch);
   }
 
-  async createTicketBatch(id:number , dto: TicketBatchDto) {
+  async createTicketBatch(id: number, dto: TicketBatchDto) {
     const event = await this.eventRepo.findOneByOrFail({ id });
 
     const batch = this.repo.create({
       event,
       name: dto.name,
-      price: dto.price
+      price: dto.price,
     });
 
     const savedBatch = await this.repo.save(batch);
 
-    await this.ticketService.generate({
-      batch: savedBatch,
-      event_code: event.code,
-      ticket_number: dto.ticket,
-    },false);
+    await this.ticketService.generate(
+      {
+        batch: savedBatch,
+        event_code: event.code,
+        ticket_number: dto.ticket,
+      },
+      false
+    );
 
     return true;
   }
 
-  async createDynamicTicketBatch(id:number , dto: TicketBatchDto) {
+  async createDynamicTicketBatch(id: number, dto: TicketBatchDto) {
     const event = await this.eventRepo.findOneByOrFail({ id });
 
     const batch = this.repo.create({
@@ -50,33 +53,38 @@ export class TicketBatchService extends BaseService<TicketBatch> {
 
     const savedBatch = await this.repo.save(batch);
 
-    await this.ticketService.generate({
-      batch:  savedBatch,
-      event_code: event.code,
-      ticket_number: dto.ticket,
-    },true);
+    await this.ticketService.generate(
+      {
+        batch: savedBatch,
+        event_code: event.code,
+        ticket_number: dto.ticket,
+      },
+      true
+    );
 
     return true;
   }
 
-  async addroulette(id:number , dto: rouletteDto) {
-    const batch = await this.repo.findOneOrFail({ where: { id }, relations: { event: true } });
+  async addroulette(id: number, dto: rouletteDto) {
+    const batch = await this.repo.findOneOrFail({
+      where: { id },
+      relations: { event: true },
+    });
     const roulette = this.rouletteRepo.create({
       batch,
       sectors: dto.sectors,
     });
     await this.rouletteRepo.save(roulette);
-    batch.roulette = roulette;  
-    await this.ticketService.addQrData( batch.id );
-    return this.repo.save(batch)
+    batch.roulette = roulette;
+    await this.ticketService.addQrData(batch.id);
+    return this.repo.save(batch);
   }
 
-  async deleteBatch(id:number){
+  async deleteBatch(id: number) {
     const batch = await this.repo.findOneByOrFail({ id });
     return this.repo.delete(id);
   }
 
-<<<<<<< HEAD
   async downloadTicketBatchZip(
     id: number,
     ticketDesignInfo: ticketDesignInfoDto,
@@ -134,13 +142,13 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     fs.rmSync(tempDir, { recursive: true, force: true });
 
     return path.resolve(zipPath);
-=======
+  }
+
   async getBatchesByEventId(eventId: number) {
     await this.eventRepo.findOneByOrFail({ id: eventId });
     return this.repo.find({
       where: { event: { id: eventId } },
-      order: { createdAt: "DESC" }
+      order: { createdAt: "DESC" },
     });
->>>>>>> 8b934220d7dfeb5604da8c167a0fa6d151a8c95b
   }
 }

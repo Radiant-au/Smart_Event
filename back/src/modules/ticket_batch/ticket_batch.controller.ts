@@ -35,8 +35,8 @@ export class TicketBatchController {
         res.status(200).json({ success: true, data: event });
     });
 
-    // getBatchesByEventId = asyncHandler(async (req: Request, res: Response) => {
-    //     const batches = await this.ticketService.getBatchesByEventId(Number(req.params.id));
-    //     res.status(200).json({ success: true, data: batches });
-    // });
+    getBatchesByEventId = asyncHandler(async (req: Request, res: Response) => {
+        const batches = await this.ticketService.getBatchesByEventId(Number(req.params.id));
+        res.status(200).json({ success: true, data: batches });
+    });
 }
