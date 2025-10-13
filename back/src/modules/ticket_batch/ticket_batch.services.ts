@@ -106,7 +106,7 @@ export class TicketBatchService extends BaseService<TicketBatch> {
 
     // Loop through tickets
     for (const ticket of batch.tickets) {
-      const ticketCode = ticket.code || `${batch.event.code}-${ticket.id}`;
+      const ticketCode = ticket.code;
 
       // Apply ticket-specific code
       const designWithCode = {
@@ -121,14 +121,15 @@ export class TicketBatchService extends BaseService<TicketBatch> {
 
       const generatedPath = await this.ticketService.generateTicketWithCode(
         designWithCode,
-        ticketTemplate as Express.Multer.File
+        ticketTemplate as Express.Multer.File,
+        batch.id
       );
 
       const fileBuffer = fs.readFileSync(generatedPath);
       const fileName = `ticket-${ticketCode}.png`;
 
       zip.file(fileName, fileBuffer);
-      fs.unlinkSync(generatedPath);
+      // fs.unlinkSync(generatedPath);
     }
 
     // Final ZIP
@@ -139,7 +140,7 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
     fs.writeFileSync(zipPath, zipBuffer);
 
-    fs.rmSync(tempDir, { recursive: true, force: true });
+    // fs.rmSync(tempDir, { recursive: true, force: true });
 
     return path.resolve(zipPath);
   }

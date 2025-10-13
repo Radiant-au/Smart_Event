@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Calendar, MapPin, Plus, Ticket } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/api/auth-api';
 import { addCollaborator, removeCollaborator } from '@/api/event-api';
 import { Input } from '@/components/ui/input';

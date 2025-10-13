@@ -31,3 +31,7 @@ Thumbs.db
 # IDE settings
 .vscode/
 .idea/
+
+# Temporary files
+temp/
+uploads/

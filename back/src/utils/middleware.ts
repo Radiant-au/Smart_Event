@@ -43,7 +43,7 @@ const MIME_TYPES = {
 };
 
 // Define the upload directory
-export const UPLOADS_DIR = path.join(__dirname, '../../uploads/original');
+export const UPLOADS_DIR = path.join(__dirname, '../../uploads');
 
 // Storage configuration
 export const storage = multer.diskStorage({

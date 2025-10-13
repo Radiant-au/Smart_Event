@@ -78,7 +78,7 @@ export class TicketService extends BaseService<Ticket> {
     return await this.repo.save(ticket);
   }
 
-  async generateTicketWithCode(ticketDesignInfo : ticketDesignInfoDto , ticketfile : Express.Multer.File ) {
+  async generateTicketWithCode(ticketDesignInfo : ticketDesignInfoDto , ticketfile : Express.Multer.File , batchId : number) {
     
       if (!ticketfile) {
         throw new Error("No image uploaded.");
@@ -91,10 +91,9 @@ export class TicketService extends BaseService<Ticket> {
       const barcodeBuffer = await bwipjs.toBuffer({
         bcid: "code128",
         text: ticketCode,
-        scale: 3,
+        scale: 3, 
         height: 10,
-        includetext: true,
-        textxalign: "center",
+        includetext: false
       });
 
       const resizedBarcode = await sharp(barcodeBuffer)
@@ -134,11 +133,12 @@ export class TicketService extends BaseService<Ticket> {
         });
       }
 
-      const outputPath = path.join("uploads", `final-${Date.now()}.png`);
+      const thisBatchId = batchId;
+      const outputPath = path.join("temp", `batch-${thisBatchId}`, `final-${Date.now()}.png`);
 
       await sharp(imagePath).composite(composites).toFile(outputPath);
 
-      fs.unlinkSync(imagePath);
+      // fs.unlinkSync(imagePath);
 
       return path.resolve(outputPath);
   };

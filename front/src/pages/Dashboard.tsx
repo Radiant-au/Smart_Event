@@ -2,14 +2,12 @@ import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Calendar, Plus, Ticket, Scan } from 'lucide-react';
-import useAppStore from '../store/useAppStore';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/api/auth-api';
 import { getBatchesByEventId } from '@/api/batch-api';
 import { getTicketCountByBatchId } from '@/api/ticket-api';
 
 const Dashboard = () => {
-  const { auth, tickets, batches } = useAppStore();
   const [me, setMe] = useState<
     | null
     | {

@@ -9,9 +9,9 @@ import Dashboard from "./pages/Dashboard";
 import CreateEvent from "./pages/Events/CreateEvent";
 import EventsList from "./pages/Events/EventsList";
 import TicketBatches from "./pages/Events/TicketBatches";
-import TicketsPage from "./pages/Tickets/TicketsPage";
 import Scanner from "./pages/Tickets/Scanner";
 import { useAuthContext } from "@/context/auth-context";
+import TicketLayoutEditor from "./pages/Events/TicketLayoutEditor";
 
 function App() {
   const { isAuthenticated } = useAuthContext();
@@ -71,10 +71,10 @@ function App() {
             }
           />
           <Route
-            path="/batches/:batchId/tickets"
+            path="/batches/layout/:batchId"
             element={
               <ProtectedRoute>
-                <TicketsPage />
+                <TicketLayoutEditor />
               </ProtectedRoute>
             }
           />
