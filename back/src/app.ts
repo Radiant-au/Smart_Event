@@ -17,6 +17,7 @@ app.use(
 app.use(errorHandler);
 app.use(express.json());
 app.use("/api", route);
+app.get("/", (req, res) => res.send("api is working"));
 
 // DB connection
 AppDataSource.initialize()
