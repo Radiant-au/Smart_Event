@@ -76,6 +76,7 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     return this.repo.delete(id);
   }
 
+<<<<<<< HEAD
   async downloadTicketBatchZip(
     id: number,
     ticketDesignInfo: ticketDesignInfoDto,
@@ -133,5 +134,13 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     fs.rmSync(tempDir, { recursive: true, force: true });
 
     return path.resolve(zipPath);
+=======
+  async getBatchesByEventId(eventId: number) {
+    await this.eventRepo.findOneByOrFail({ id: eventId });
+    return this.repo.find({
+      where: { event: { id: eventId } },
+      order: { createdAt: "DESC" }
+    });
+>>>>>>> 8b934220d7dfeb5604da8c167a0fa6d151a8c95b
   }
 }

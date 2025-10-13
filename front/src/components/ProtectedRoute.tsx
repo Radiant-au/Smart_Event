@@ -1,14 +1,18 @@
 import { Navigate } from 'react-router-dom';
-import useAppStore from '../store/useAppStore';
+import { useAuthContext } from '@/context/auth-context';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { auth } = useAppStore();
+  const { isAuthenticated, isAuthLoading } = useAuthContext();
 
-  if (!auth.token) {
+  if (isAuthLoading) {
+    return null;
+  }
+
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
