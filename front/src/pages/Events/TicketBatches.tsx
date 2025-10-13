@@ -306,7 +306,7 @@ const TicketBatches = () => {
                         <CardTitle className="text-lg font-semibold tracking-tight">{batch.name}</CardTitle>
                         <CardDescription className="mt-1">
                           <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                            ${price} per ticket
+                            {price}Ks per ticket
                           </span>
                         </CardDescription>
                       </div>
@@ -326,13 +326,13 @@ const TicketBatches = () => {
                         <div className="mt-1 text-base font-semibold">{generated}</div>
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
-                        <div className="text-gray-500 dark:text-gray-400">Total</div>
+                        <div className="text-gray-500 dark:text-gray-400">Used</div>
                         <div className="mt-1 text-base font-semibold">
                           {typeof (batch as any).totalTickets === 'number' ? (batch as any).totalTickets : '—'}
                         </div>
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
-                        <div className="text-gray-500 dark:text-gray-400">Remaining</div>
+                        <div className="text-gray-500 dark:text-gray-400">Unused</div>
                         <div className="mt-1 text-base font-semibold">
                           {typeof (batch as any).totalTickets === 'number'
                             ? (batch as any).totalTickets - generated

@@ -19,6 +19,7 @@ router.post("/:id/static", ticketBatch.createTicketBatch);
 router.post("/:id/dynamic", ticketBatch.createDynamicTicketBatch);
 router.post("/:id/roulette", ticketBatch.addRoulette);
 router.delete("/:id", ticketBatch.deleteBatch);
+router.get("/event/:id", ticketBatch.getBatchesByEventId);
 router.post("/:id/download", upload.single("file"), ticketBatch.downloadTicketBatchZip);
 
 export default router;
