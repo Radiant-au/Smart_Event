@@ -9,4 +9,5 @@ router.use("/event", eventRoute);
 router.use("/batch", batchRoute);
 router.use("/ticket", ticketRoute);
 router.use("/auth", authRoute);
+
 export default router;
