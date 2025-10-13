@@ -3,14 +3,52 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Calendar, Plus, Ticket, Scan } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
+import { useEffect, useState } from 'react';
+import { getCurrentUser } from '@/api/auth-api';
 
 const Dashboard = () => {
-  const { auth, getEventsByUser, tickets, batches } = useAppStore();
+  const { auth, tickets, batches } = useAppStore();
+  const [me, setMe] = useState<
+    | null
+    | {
+        id: number;
+        name: string;
+        email: string;
+        createdAt: string;
+        updatedAt: string;
+        events: Array<{
+          id: number;
+          name: string;
+          code: string;
+          description: string | null;
+          startDate: string | null;
+          endDate: string | null;
+          location: string | null;
+          createdAt: string;
+        }>;
+      }
+  >(null);
 
-  const userEvents = auth.user ? getEventsByUser(auth.user.id) : [];
+  const userEvents = me?.events ?? [];
   const totalTickets = tickets.length;
   const usedTickets = tickets.filter((t) => t.status === 'used').length;
   const totalBatches = batches.length;
+
+  useEffect(() => {
+    const token = localStorage.getItem('code_jwt');
+    if (!token) return;
+
+    const fetchMe = async () => {
+      try {
+        const res = await getCurrentUser();
+        setMe((res as any).data?.data ?? res.data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    fetchMe();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
@@ -18,7 +56,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
             <h1 className="text-4xl font-bold mb-2">
-              Welcome back, {auth.user?.username}!
+              Welcome back, {me?.name || 'User'}!
             </h1>
             <p className="text-blue-100 text-lg">
               Manage your events and tickets from your dashboard
@@ -148,7 +186,14 @@ const Dashboard = () => {
                       <div className="p-3 border rounded-lg hover:bg-accent transition-colors">
                         <h4 className="font-semibold">{event.name}</h4>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(event.date).toLocaleDateString()} • {event.location}
+                          {(() => {
+                            const dateStr = event.startDate || event.createdAt;
+                            try {
+                              return new Date(dateStr).toLocaleDateString();
+                            } catch {
+                              return '';
+                            }
+                          })()} {event.location ? `• ${event.location}` : ''}
                         </p>
                       </div>
                     </Link>

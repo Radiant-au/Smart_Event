@@ -28,4 +28,9 @@ export class TicketBatchController {
         const event = await this.ticketService.deleteBatch(Number(req.params.id));
         res.status(201).json({ success: true, data: event });
     });
+
+    getBatchesByEventId = asyncHandler(async (req: Request, res: Response) => {
+        const batches = await this.ticketService.getBatchesByEventId(Number(req.params.id));
+        res.status(200).json({ success: true, data: batches });
+    });
 }

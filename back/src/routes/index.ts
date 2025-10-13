@@ -5,11 +5,9 @@ import authRoute from "../modules/user/auth.route";
 import { Router } from "express";
 
 const router = Router();
-
-
-router.use("/event",  eventRoute);
-router.use("/batch" , batchRoute);
-router.use("/ticket" , ticketRoute);
+router.use("/event", eventRoute);
+router.use("/batch", batchRoute);
+router.use("/ticket", ticketRoute);
 router.use("/auth", authRoute);
 
 export default router;

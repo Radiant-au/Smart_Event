@@ -1,55 +1,68 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../../components/ui/card';
-import { Ticket } from 'lucide-react';
-import useAppStore from '../../store/useAppStore';
-import { useToast } from '../../hooks/use-toast';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Ticket } from "lucide-react";
+import { useToast } from "../../hooks/use-toast";
+import { registerUser, RegisterRequest } from "@/api/auth-api";
 
 const Register = () => {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
-  const register = useAppStore((state) => state.register);
+
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
       toast({
-        title: 'Registration failed',
-        description: 'Passwords do not match',
-        variant: 'destructive',
+        title: "Registration failed",
+        description: "Passwords do not match",
+        variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
 
-    setTimeout(() => {
-      const success = register(username, password, email);
+    const payload: RegisterRequest = {
+      name,
+      email,
+      password,
+    };
 
-      if (success) {
-        toast({
-          title: 'Registration successful',
-          description: 'You can now sign in',
-        });
-        navigate('/login');
-      } else {
-        toast({
-          title: 'Registration failed',
-          description: 'Username or email already exists',
-          variant: 'destructive',
-        });
-      }
+    try {
+      await registerUser(payload);
+      toast({
+        title: "Registration successful",
+        description: "You can now sign in to your account.",
+      });
+      navigate("/login");
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message || "Username or email already exists";
+      toast({
+        title: "Registration failed",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -62,20 +75,19 @@ const Register = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>
-            Sign up for a SmartEvents account
-          </CardDescription>
+          <CardDescription>Sign up for a SmartEvents account</CardDescription>
         </CardHeader>
+
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="name">Full Name</Label>
               <Input
-                id="username"
+                id="name"
                 type="text"
-                placeholder="Choose a username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
               />
             </div>
@@ -113,12 +125,13 @@ const Register = () => {
               />
             </div>
           </CardContent>
+
           <CardFooter className="flex flex-col space-y-4">
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Creating account...' : 'Sign Up'}
+              {loading ? "Creating account..." : "Sign Up"}
             </Button>
             <div className="text-sm text-center text-muted-foreground">
-              Already have an account?{' '}
+              Already have an account?{" "}
               <Link to="/login" className="text-blue-600 hover:underline">
                 Sign in
               </Link>

@@ -6,38 +6,82 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
 import { ArrowLeft, Plus, Ticket, Download, Eye } from 'lucide-react';
-import useAppStore from '../../store/useAppStore';
 import { useToast } from '../../hooks/use-toast';
-import { downloadTicketsAsZip } from '../../utils/downloadZip';
+import { useEffect } from 'react';
+import { getCurrentUser } from '@/api/auth-api';
+import { createTicketBatch, createDynamicTicketBatch, getBatchesByEventId } from '@/api/batch-api';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
+import { generateBarcodeDataURL } from '@/utils/generateBarcode';
 
 const TicketBatches = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const {
-    getEventById,
-    getBatchesByEvent,
-    createBatch,
-    generateTickets,
-    getTicketsByBatch,
-  } = useAppStore();
+  // Using API directly; no local store for batches/tickets
 
-  const event = eventId ? getEventById(Number(eventId)) : null;
-  const batches = eventId ? getBatchesByEvent(Number(eventId)) : [];
+  const [event, setEvent] = useState<
+    | null
+    | {
+        id: number;
+        name: string;
+        description?: string | null;
+        startDate?: string | null;
+        endDate?: string | null;
+        location?: string | null;
+        createdAt: string;
+      }
+  >(null);
+  const [loadingEvent, setLoadingEvent] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      if (!eventId) return;
+      try {
+        setLoadingEvent(true);
+        const res = await getCurrentUser();
+        const me = (res as any).data?.data ?? res.data;
+        const found = (me.events || []).find((e: any) => e.id === Number(eventId));
+        setEvent(found || null);
+      } finally {
+        setLoadingEvent(false);
+      }
+    };
+    load();
+  }, [eventId]);
+  const [remoteBatches, setRemoteBatches] = useState<any[]>([]);
+  const batches = remoteBatches;
+
+  const fetchBatches = async (eid: number) => {
+    try {
+      const res = await getBatchesByEventId(eid);
+      const data = (res as any).data?.data ?? res.data;
+      setRemoteBatches(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  useEffect(() => {
+    if (eventId) {
+      fetchBatches(Number(eventId));
+    }
+  }, [eventId]);
 
   const [batchName, setBatchName] = useState('');
   const [price, setPrice] = useState('');
   const [totalTickets, setTotalTickets] = useState('');
+  const [batchType, setBatchType] = useState<'static' | 'dynamic'>('static');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  if (!event) {
+  if (!event || loadingEvent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground mb-4">Event not found</p>
+            <p className="text-muted-foreground mb-4">{loadingEvent ? 'Loading event...' : 'Event not found'}</p>
             <Button onClick={() => navigate('/events')}>
               Back to Events
             </Button>
@@ -50,61 +94,48 @@ const TicketBatches = () => {
   const handleCreateBatch = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    setTimeout(() => {
-      try {
-        createBatch({
-          eventId: event.id,
+    try {
+      if (batchType === 'static') {
+        await createTicketBatch(event.id, {
           name: batchName,
-          price: parseFloat(price),
-          totalTickets: parseInt(totalTickets),
+          price: price, // backend accepts string
+          ticket: parseInt(totalTickets),
         });
-
-        toast({
-          title: 'Batch created',
-          description: 'Ticket batch has been created successfully',
+      } else {
+        await createDynamicTicketBatch(event.id, {
+          name: batchName,
+          ticket: parseInt(totalTickets),
         });
-
-        setBatchName('');
-        setPrice('');
-        setTotalTickets('');
-        setIsDialogOpen(false);
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to create batch',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
+        // Not updating local store for dynamic since store schema requires totalTickets.
       }
-    }, 1000);
+
+      toast({
+        title: 'Batch created',
+        description: batchType === 'static' ? 'Static ticket batch created' : 'Dynamic ticket batch created',
+      });
+
+      setBatchName('');
+      setPrice('');
+      setTotalTickets('');
+      setBatchType('static');
+      setIsDialogOpen(false);
+
+      // Refresh remote list
+      fetchBatches(event.id);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create batch',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleGenerateTickets = async (batchId: number, batchName: string, count: number) => {
-    setLoading(true);
-
-    setTimeout(() => {
-      try {
-        generateTickets(batchId, event.id, batchName, count);
-        toast({
-          title: 'Tickets generated',
-          description: `${count} tickets have been generated successfully`,
-        });
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to generate tickets',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    }, 1500);
-  };
-
-  const handleDownloadZip = async (batchId: number, batchName: string) => {
-    const tickets = getTicketsByBatch(batchId);
+  // Tickets are generated by backend upon batch creation; no manual generation in frontend
+  const handleDownloadZip = async (batch: any) => {
+    const tickets = Array.isArray(batch.tickets) ? batch.tickets : [];
 
     if (tickets.length === 0) {
       toast({
@@ -118,11 +149,19 @@ const TicketBatches = () => {
     setLoading(true);
 
     try {
-      await downloadTicketsAsZip(tickets, batchName);
-      toast({
-        title: 'ZIP download successful',
-        description: `Downloaded ${tickets.length} barcodes`,
-      });
+      const zip = new JSZip();
+      const folder = zip.folder(`${batch.name}-tickets`);
+      if (!folder) throw new Error('Failed to create ZIP folder');
+
+      for (const t of tickets) {
+        const dataURL = await generateBarcodeDataURL(t.code);
+        const base64Data = dataURL.split(',')[1];
+        folder.file(`${t.code}.png`, base64Data, { base64: true });
+      }
+
+      const content = await zip.generateAsync({ type: 'blob' });
+      saveAs(content, `${batch.name}-tickets.zip`);
+      toast({ title: 'ZIP download successful', description: `Downloaded ${tickets.length} barcodes` });
     } catch (error) {
       toast({
         title: 'Error',
@@ -152,7 +191,8 @@ const TicketBatches = () => {
           </p>
         </div>
 
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <div />
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -169,6 +209,31 @@ const TicketBatches = () => {
               </DialogHeader>
               <form onSubmit={handleCreateBatch} className="space-y-4">
                 <div className="space-y-2">
+                  <Label>Batch Type</Label>
+                  <div className="flex gap-6">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="batchType"
+                        value="static"
+                        checked={batchType === 'static'}
+                        onChange={() => setBatchType('static')}
+                      />
+                      Static ticket
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="batchType"
+                        value="dynamic"
+                        checked={batchType === 'dynamic'}
+                        onChange={() => setBatchType('dynamic')}
+                      />
+                      Dynamic ticket
+                    </label>
+                  </div>
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="batchName">Batch Name</Label>
                   <Input
                     id="batchName"
@@ -178,18 +243,20 @@ const TicketBatches = () => {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    required
-                  />
-                </div>
+                {batchType === 'static' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="totalTickets">Total Tickets</Label>
                   <Input
@@ -222,61 +289,76 @@ const TicketBatches = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {batches.map((batch) => {
-              const tickets = getTicketsByBatch(batch.id);
-              const generated = tickets.length;
+              const ticketsList = Array.isArray(batch.tickets) ? batch.tickets : [];
+              const generated = ticketsList.length;
+              const isDynamic = Boolean((batch as any).dynamic);
+              const price = Number(batch.price ?? 0).toFixed(2);
 
               return (
-                <Card key={batch.id}>
-                  <CardHeader>
-                    <CardTitle>{batch.name}</CardTitle>
-                    <CardDescription>
-                      ${batch.price.toFixed(2)} per ticket
-                    </CardDescription>
+                <Card
+                  key={batch.id}
+                  className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur"
+                >
+                  <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-lg font-semibold tracking-tight">{batch.name}</CardTitle>
+                        <CardDescription className="mt-1">
+                          <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                            ${price} per ticket
+                          </span>
+                        </CardDescription>
+                      </div>
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                        isDynamic
+                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                          : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                      }`}>
+                        {isDynamic ? 'Dynamic' : 'Static'}
+                      </span>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <div>Total: {batch.totalTickets} tickets</div>
-                      <div>Generated: {generated} tickets</div>
-                      <div>Remaining: {batch.totalTickets - generated}</div>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-3 gap-3 text-xs">
+                      <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
+                        <div className="text-gray-500 dark:text-gray-400">Generated</div>
+                        <div className="mt-1 text-base font-semibold">{generated}</div>
+                      </div>
+                      <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
+                        <div className="text-gray-500 dark:text-gray-400">Total</div>
+                        <div className="mt-1 text-base font-semibold">
+                          {typeof (batch as any).totalTickets === 'number' ? (batch as any).totalTickets : '—'}
+                        </div>
+                      </div>
+                      <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
+                        <div className="text-gray-500 dark:text-gray-400">Remaining</div>
+                        <div className="mt-1 text-base font-semibold">
+                          {typeof (batch as any).totalTickets === 'number'
+                            ? (batch as any).totalTickets - generated
+                            : '—'}
+                        </div>
+                      </div>
                     </div>
 
-                    {generated < batch.totalTickets && (
-                      <Button
-                        className="w-full"
-                        variant="outline"
-                        onClick={() =>
-                          handleGenerateTickets(
-                            batch.id,
-                            batch.name,
-                            batch.totalTickets - generated
-                          )
-                        }
-                        disabled={loading}
-                      >
-                        <Ticket className="mr-2 h-4 w-4" />
-                        Generate Tickets
-                      </Button>
-                    )}
-
-                    {generated > 0 && (
-                      <>
-                        <Link to={`/batches/${batch.id}/tickets`}>
-                          <Button className="w-full" variant="outline">
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Tickets
-                          </Button>
-                        </Link>
-                        <Button
-                          className="w-full"
-                          variant="outline"
-                          onClick={() => handleDownloadZip(batch.id, batch.name)}
-                          disabled={loading}
-                        >
-                          <Download className="mr-2 h-4 w-4" />
-                          Download ZIP
+                    <div className="flex items-center gap-3 pt-1">
+                      <Link to={`/batches/${batch.id}/tickets`} className="flex-1">
+                        <Button className="w-full" variant="secondary">
+                          <Eye className="mr-2 h-4 w-4" />
+                          View
                         </Button>
-                      </>
-                    )}
+                      </Link>
+                      <Button
+                        className="flex-1"
+                        variant="outline"
+                        onClick={() => handleDownloadZip(batch)}
+                        disabled={loading || generated === 0}
+                        title={generated === 0 ? 'No tickets to download' : 'Download all barcodes'}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               );

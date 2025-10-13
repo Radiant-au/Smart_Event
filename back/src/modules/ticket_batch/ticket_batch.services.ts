@@ -71,4 +71,12 @@ export class TicketBatchService extends BaseService<TicketBatch> {
     const batch = await this.repo.findOneByOrFail({ id });
     return this.repo.delete(id);
   }
+
+  async getBatchesByEventId(eventId: number) {
+    await this.eventRepo.findOneByOrFail({ id: eventId });
+    return this.repo.find({
+      where: { event: { id: eventId } },
+      order: { createdAt: "DESC" }
+    });
+  }
 }

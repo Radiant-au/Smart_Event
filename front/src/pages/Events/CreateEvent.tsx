@@ -6,8 +6,9 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { ArrowLeft } from 'lucide-react';
-import useAppStore from '../../store/useAppStore';
 import { useToast } from '../../hooks/use-toast';
+import { createEvent as createEventApi } from '@/api/event-api';
+import { getCurrentUser } from '@/api/auth-api';
 
 const CreateEvent = () => {
   const [name, setName] = useState('');
@@ -17,31 +18,41 @@ const CreateEvent = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const createEvent = useAppStore((state) => state.createEvent);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    setTimeout(() => {
-      try {
-        createEvent({ name, description, date, location });
-        toast({
-          title: 'Event created',
-          description: 'Your event has been created successfully',
-        });
-        navigate('/events');
-      } catch (error) {
-        toast({
-          title: 'Error',
-          description: 'Failed to create event',
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
-    }, 1000);
+    try {
+      const meRes = await getCurrentUser();
+      const me = (meRes as any).data?.data ?? meRes.data;
+
+      const payload = {
+        name,
+        description: description || undefined,
+        userId: me.id,
+        startDate: date ? new Date(date).toISOString() : undefined,
+        endDate: undefined as string | undefined,
+        location: location || undefined,
+      };
+
+      await createEventApi(payload as any);
+
+      toast({
+        title: 'Event created',
+        description: 'Your event has been created successfully',
+      });
+      navigate('/events');
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create event',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -83,7 +94,6 @@ const CreateEvent = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={4}
-                  required
                 />
               </div>
 
@@ -94,7 +104,6 @@ const CreateEvent = () => {
                   type="datetime-local"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  required
                 />
               </div>
 
@@ -105,7 +114,6 @@ const CreateEvent = () => {
                   placeholder="Enter event location"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  required
                 />
               </div>
 
