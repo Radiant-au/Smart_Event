@@ -6,11 +6,17 @@ import route from "./routes";
 
 const app = express();
 
-app.use(cors());
-app.use(errorHandler)
+app.use(
+  cors({
+    origin: ["http://localhost:4000", "https://example.vercel.app"],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+app.use(errorHandler);
 app.use(express.json());
-app.use('/api', route);
-
+app.use("/api", route);
 
 // DB connection
 AppDataSource.initialize()

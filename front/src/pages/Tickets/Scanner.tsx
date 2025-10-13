@@ -6,7 +6,7 @@ import { Label } from '../../components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '../../components/ui/alert';
 import { Scan, CheckCircle, XCircle } from 'lucide-react';
 import Barcode from 'react-barcode';
-import useAppStore from '../../store/useAppStore';
+import { validateTicket } from '@/api/ticket-api';
 
 const Scanner = () => {
   const [barcodeInput, setBarcodeInput] = useState('');
@@ -16,22 +16,31 @@ const Scanner = () => {
     barcode?: string;
   } | null>(null);
 
-  const { scanTicket } = useAppStore();
-
-  const handleScan = (e: React.FormEvent) => {
+  const handleScan = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!barcodeInput.trim()) {
       return;
     }
 
-    const result = scanTicket(barcodeInput.trim());
+    try {
+      const res = await validateTicket({ barcode: barcodeInput.trim() });
+      const payload = (res as any).data;
+      const success = payload?.success ?? true;
+      const message = payload?.data?.message ?? payload?.message ?? 'Scanned';
 
-    setScanResult({
-      valid: result.valid,
-      message: result.message,
-      barcode: barcodeInput.trim(),
-    });
+      setScanResult({
+        valid: !!success,
+        message,
+        barcode: barcodeInput.trim(),
+      });
+    } catch (err: any) {
+      setScanResult({
+        valid: false,
+        message: err?.response?.data?.message ?? '❌ Invalid ticket',
+        barcode: barcodeInput.trim(),
+      });
+    }
 
     setBarcodeInput('');
   };
