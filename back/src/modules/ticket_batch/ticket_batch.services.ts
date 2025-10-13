@@ -5,6 +5,10 @@ import { EventRepo } from "../event/event.repo";
 import { TicketService } from "../ticket/ticket.services";
 import { RouletteRepo } from "../roulette/roulette.repo";
 import { rouletteDto } from "../roulette/roulette.dto";
+import { ticketDesignInfoDto } from "../ticket/ticket.dto";
+import JSZip from "jszip";
+import path from "path";
+import fs from "fs";
 
 export class TicketBatchService extends BaseService<TicketBatch> {
   private eventRepo = EventRepo;
@@ -70,5 +74,64 @@ export class TicketBatchService extends BaseService<TicketBatch> {
   async deleteBatch(id:number){
     const batch = await this.repo.findOneByOrFail({ id });
     return this.repo.delete(id);
+  }
+
+  async downloadTicketBatchZip(
+    id: number,
+    ticketDesignInfo: ticketDesignInfoDto,
+    ticketFile?: Express.Multer.File
+  ) {
+    const batch = await this.repo.findOne({
+      where: { id },
+      relations: ["event", "tickets"],
+    });
+
+    if (!batch) throw new Error("Batch not found");
+    if (!batch.tickets || batch.tickets.length === 0)
+      throw new Error("No tickets found in batch");
+
+    // Prepare ZIP & temporary dirs
+    const zip = new JSZip();
+    const tempDir = path.join("temp", `batch-${batch.id}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    // Loop through tickets
+    for (const ticket of batch.tickets) {
+      const ticketCode = ticket.code || `${batch.event.code}-${ticket.id}`;
+
+      // Apply ticket-specific code
+      const designWithCode = {
+        ...ticketDesignInfo,
+        code: ticketCode,
+      };
+
+      // Use frontend’s uploaded image or fallback
+      const ticketTemplate = ticketFile
+        ? ticketFile
+        : { path: "uploads/default-template.png" };
+
+      const generatedPath = await this.ticketService.generateTicketWithCode(
+        designWithCode,
+        ticketTemplate as Express.Multer.File
+      );
+
+      const fileBuffer = fs.readFileSync(generatedPath);
+      const fileName = `ticket-${ticketCode}.png`;
+
+      zip.file(fileName, fileBuffer);
+      fs.unlinkSync(generatedPath);
+    }
+
+    // Final ZIP
+    const outputDir = "temp/zips";
+    fs.mkdirSync(outputDir, { recursive: true });
+
+    const zipPath = path.join(outputDir, `batch-${batch.id}-${Date.now()}.zip`);
+    const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+    fs.writeFileSync(zipPath, zipBuffer);
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    return path.resolve(zipPath);
   }
 }

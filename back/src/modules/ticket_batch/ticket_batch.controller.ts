@@ -24,8 +24,16 @@ export class TicketBatchController {
         res.status(201).json({ success: true, data: event });
     });
 
+    downloadTicketBatchZip = asyncHandler(async (req: Request, res: Response) => {
+        const file = req.file;
+        const download = await this.ticketService.downloadTicketBatchZip(Number(req.params.id), req.body , file);
+        res.status(201).json({ success: true, data: download });
+    });
+
     deleteBatch = asyncHandler(async (req: Request, res: Response) => {
         const event = await this.ticketService.deleteBatch(Number(req.params.id));
-        res.status(201).json({ success: true, data: event });
+        res.status(200).json({ success: true, data: event });
     });
+
+    
 }
