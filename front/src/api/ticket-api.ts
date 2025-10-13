@@ -20,3 +20,14 @@ export const validateTicket = async (data: ValidateTicketDto) => {
 export const addDynamicDataToTicket = async (token: string, data: Record<string, any>) => {
   return apiClient.post(`/ticket/dynamic/${encodeURIComponent(token)}`, data);
 };
+
+export interface TicketCountResponse {
+  batchId: number;
+  total: number;
+  used: number;
+  unused: number;
+}
+
+export const getTicketCountByBatchId = async (batchId: number) => {
+  return apiClient.get<{ success: boolean; data: TicketCountResponse }>(`/ticket/count/${batchId}`);
+};

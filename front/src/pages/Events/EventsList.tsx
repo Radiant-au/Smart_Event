@@ -81,9 +81,10 @@ const EventsList = () => {
             {events.map((event) => (
               <Card
                 key={event.id}
-                className="hover:shadow-lg transition-shadow"
+                className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur"
               >
-                <CardHeader>
+                <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
+                <CardHeader className="pb-3">
                   <CardTitle className="flex items-start justify-between">
                     <span className="line-clamp-1">{event.name}</span>
                   </CardTitle>

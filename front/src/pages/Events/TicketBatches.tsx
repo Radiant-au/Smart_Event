@@ -10,6 +10,7 @@ import { useToast } from '../../hooks/use-toast';
 import { useEffect } from 'react';
 import { getCurrentUser } from '@/api/auth-api';
 import { createTicketBatch, createDynamicTicketBatch, getBatchesByEventId } from '@/api/batch-api';
+import { getTicketCountByBatchId } from '@/api/ticket-api';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { generateBarcodeDataURL } from '@/utils/generateBarcode';
@@ -52,6 +53,7 @@ const TicketBatches = () => {
   }, [eventId]);
   const [remoteBatches, setRemoteBatches] = useState<any[]>([]);
   const batches = remoteBatches;
+  const [batchCounts, setBatchCounts] = useState<Record<number, { total: number; used: number; unused: number }>>({});
 
   const fetchBatches = async (eid: number) => {
     try {
@@ -68,6 +70,26 @@ const TicketBatches = () => {
       fetchBatches(Number(eventId));
     }
   }, [eventId]);
+
+  useEffect(() => {
+    const loadCounts = async () => {
+      const entries = await Promise.all(
+        batches.map(async (b: any) => {
+          try {
+            const res = await getTicketCountByBatchId(b.id);
+            const data = (res as any).data?.data ?? res.data?.data ?? res.data;
+            return [b.id, { total: data.total, used: data.used, unused: data.unused }] as const;
+          } catch (e) {
+            return [b.id, { total: 0, used: 0, unused: 0 }] as const;
+          }
+        })
+      );
+      setBatchCounts(Object.fromEntries(entries));
+    };
+    if (batches.length > 0) {
+      loadCounts();
+    }
+  }, [batches]);
 
   const [batchName, setBatchName] = useState('');
   const [price, setPrice] = useState('');
@@ -171,6 +193,11 @@ const TicketBatches = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddRoulette = (batch?: any) => {
+    const name = batch?.name ? ` for ${batch.name}` : '';
+    toast({ title: 'Add roulette', description: `Roulette configuration coming soon${name}` });
   };
 
   return (
@@ -290,7 +317,7 @@ const TicketBatches = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {batches.map((batch) => {
               const ticketsList = Array.isArray(batch.tickets) ? batch.tickets : [];
-              const generated = ticketsList.length;
+              const generated = batchCounts[batch.id]?.total ?? ticketsList.length;
               const isDynamic = Boolean((batch as any).dynamic);
               const price = Number(batch.price ?? 0).toFixed(2);
 
@@ -327,17 +354,11 @@ const TicketBatches = () => {
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
                         <div className="text-gray-500 dark:text-gray-400">Used</div>
-                        <div className="mt-1 text-base font-semibold">
-                          {typeof (batch as any).totalTickets === 'number' ? (batch as any).totalTickets : '—'}
-                        </div>
+                        <div className="mt-1 text-base font-semibold">{batchCounts[batch.id]?.used ?? '—'}</div>
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
                         <div className="text-gray-500 dark:text-gray-400">Unused</div>
-                        <div className="mt-1 text-base font-semibold">
-                          {typeof (batch as any).totalTickets === 'number'
-                            ? (batch as any).totalTickets - generated
-                            : '—'}
-                        </div>
+                        <div className="mt-1 text-base font-semibold">{batchCounts[batch.id]?.unused ?? '—'}</div>
                       </div>
                     </div>
 
@@ -358,6 +379,17 @@ const TicketBatches = () => {
                         <Download className="mr-2 h-4 w-4" />
                         Download
                       </Button>
+                      {isDynamic && (
+                        <Button
+                          className="flex-1"
+                          variant="outline"
+                          onClick={() => handleAddRoulette(batch)}
+                          title="Configure roulette for this batch"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Roulette
+                        </Button>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

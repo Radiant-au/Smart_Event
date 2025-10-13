@@ -7,6 +7,6 @@ const ticketController = new TicketController();
 
 router.post("/dynamic/:token", ticketController.addDynamicData);
 router.post("/validate", ticketController.validateScan);
+router.get("/count/:batchId", ticketController.getTicketCountByBatchId);
 
-
-export default router;      
+export default router;

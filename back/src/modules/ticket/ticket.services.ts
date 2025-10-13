@@ -1,4 +1,4 @@
-import { AddDynamicDto, ScanDto, ticketDesignInfoDto, TicketDto } from "./ticket.dto";
+import { AddDynamicDto, ScanDto, ticketDesignInfoDto, TicketCountDto, TicketDto } from "./ticket.dto";
 import { Ticket } from "./ticket.entity";
 import { BaseService } from "../../utils/base.services";
 import { v4 as uuidv4 } from "uuid";
@@ -142,5 +142,12 @@ export class TicketService extends BaseService<Ticket> {
 
       return path.resolve(outputPath);
   };
+
+  async getTicketCountByBatchId(batchId: number): Promise<TicketCountDto> {
+    const total = await this.repo.count({ where: { batch: { id: batchId } } });
+    const used = await this.repo.count({ where: { batch: { id: batchId }, status: "used" } });
+    const unused = await this.repo.count({ where: { batch: { id: batchId }, status: "unused" } });
+    return { batchId, total, used, unused };
+  }
 }
  

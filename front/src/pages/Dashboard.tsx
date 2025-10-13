@@ -5,6 +5,8 @@ import { Calendar, Plus, Ticket, Scan } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/api/auth-api';
+import { getBatchesByEventId } from '@/api/batch-api';
+import { getTicketCountByBatchId } from '@/api/ticket-api';
 
 const Dashboard = () => {
   const { auth, tickets, batches } = useAppStore();
@@ -30,9 +32,9 @@ const Dashboard = () => {
   >(null);
 
   const userEvents = me?.events ?? [];
-  const totalTickets = tickets.length;
-  const usedTickets = tickets.filter((t) => t.status === 'used').length;
-  const totalBatches = batches.length;
+  const [totalBatchesRemote, setTotalBatchesRemote] = useState(0);
+  const [totalTicketsRemote, setTotalTicketsRemote] = useState(0);
+  const [usedTicketsRemote, setUsedTicketsRemote] = useState(0);
 
   useEffect(() => {
     const token = localStorage.getItem('code_jwt');
@@ -50,6 +52,52 @@ const Dashboard = () => {
     fetchMe();
   }, []);
 
+  useEffect(() => {
+    const fetchTotals = async () => {
+      if (!userEvents || userEvents.length === 0) {
+        setTotalBatchesRemote(0);
+        setTotalTicketsRemote(0);
+        setUsedTicketsRemote(0);
+        return;
+      }
+
+      try {
+        const batchesPerEvent = await Promise.all(
+          userEvents.map((e) => getBatchesByEventId(e.id))
+        );
+
+        const batchLists = batchesPerEvent.map((res: any) => (res.data?.data ?? res.data) || []);
+        const allBatches = batchLists.flat();
+
+        setTotalBatchesRemote(allBatches.length);
+
+        const counts = await Promise.all(
+          allBatches.map((b: any) =>
+            getTicketCountByBatchId(b.id)
+              .then((res: any) => (res.data?.data ?? res.data))
+              .catch(() => ({ total: 0, used: 0 }))
+          )
+        );
+
+        const totals = counts.reduce(
+          (acc: { total: number; used: number }, c: any) => {
+            return { total: acc.total + (c.total || 0), used: acc.used + (c.used || 0) };
+          },
+          { total: 0, used: 0 }
+        );
+
+        setTotalTicketsRemote(totals.total);
+        setUsedTicketsRemote(totals.used);
+      } catch (e) {
+        setTotalBatchesRemote(0);
+        setTotalTicketsRemote(0);
+        setUsedTicketsRemote(0);
+      }
+    };
+
+    fetchTotals();
+  }, [userEvents]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
@@ -65,7 +113,8 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Events
@@ -80,7 +129,8 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Ticket Batches
@@ -88,14 +138,15 @@ const Dashboard = () => {
               <Ticket className="h-4 w-4 text-cyan-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalBatches}</div>
+              <div className="text-3xl font-bold">{totalBatchesRemote}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Total batches
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Tickets
@@ -103,14 +154,15 @@ const Dashboard = () => {
               <Ticket className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{totalTickets}</div>
+              <div className="text-3xl font-bold">{totalTicketsRemote}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Generated tickets
               </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Tickets Used
@@ -118,7 +170,7 @@ const Dashboard = () => {
               <Scan className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{usedTickets}</div>
+              <div className="text-3xl font-bold">{usedTicketsRemote}</div>
               <p className="text-xs text-muted-foreground mt-1">
                 Scanned tickets
               </p>
@@ -127,8 +179,9 @@ const Dashboard = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
+            <CardHeader className="pb-3">
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>
                 Common tasks to manage your events
@@ -156,8 +209,9 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
+          <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
+            <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
+            <CardHeader className="pb-3">
               <CardTitle>Recent Events</CardTitle>
               <CardDescription>
                 Your recently created events

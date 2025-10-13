@@ -27,3 +27,10 @@ export interface ticketDesignInfoDto{
     qrY: string;
     mode: string;
 }
+
+export interface TicketCountDto {
+    batchId: number;
+    total: number;
+    used: number;
+    unused: number;
+}
