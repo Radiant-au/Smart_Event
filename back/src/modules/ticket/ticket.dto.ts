@@ -14,3 +14,16 @@ export interface ScanDto{
     code: string;
     userId: number;
 }
+
+export interface ticketDesignInfoDto{
+    code: string;
+    barcodeWidth: string;
+    barcodeHeight: string;
+    barcodeX: string;
+    barcodeY: string;
+    qrWidth: string;
+    qrHeight: string;
+    qrX: string;
+    qrY: string;
+    mode: string;
+}

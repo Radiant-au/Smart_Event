@@ -8,13 +8,13 @@ export class TicketBatch {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Events, (events) => events.ticketBatches, { onDelete: "CASCADE" })
+  @ManyToOne(() => Events, (events) => events.ticketBatches, { onDelete: "CASCADE" , cascade: true})
   event!: Events; // Each batch belongs to an event
 
-  @OneToMany(() => Ticket, (ticket) => ticket.batch , { onDelete: "CASCADE"  , cascade: true})
+  @OneToMany(() => Ticket, (ticket) => ticket.batch , { cascade: true})
   tickets!: Ticket[]; // Tickets in this batch
 
-  @OneToOne(() => Roulette, (roulette) => roulette.batch, { nullable: true, cascade: true, onDelete: "CASCADE" })
+  @OneToOne(() => Roulette, (roulette) => roulette.batch, { nullable: true, cascade: true})
   @JoinColumn()
   roulette?: Roulette; // Only exists if batch is dynamic
 
