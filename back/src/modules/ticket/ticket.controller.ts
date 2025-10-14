@@ -25,4 +25,10 @@ export class TicketController {
         const counts = await this.ticketService.getTicketCountByBatchId(batchId);
         res.status(200).json({ success: true, data: counts });
     });
+
+    getTicketByBatch = asyncHandler(async (req: Request, res: Response) => {
+        const batchId = Number(req.params.batchId);
+        const tickets = await this.ticketService.getTicketByBatch(batchId);
+        res.status(200).json({ success: true, data: tickets });
+    });
 }

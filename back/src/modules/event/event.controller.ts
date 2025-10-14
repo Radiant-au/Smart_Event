@@ -15,9 +15,12 @@ export class EventController {
   });
 
   addCollaborator = asyncHandler(async (req: Request, res: Response) => {
-    const userId = Number(req.params.user);
+    const email = String((req.body as any)?.email || "").trim();
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
     const eventId = Number(req.params.event);
-    const event = await this.eventService.addCollaborator(eventId, userId);
+    const event = await this.eventService.addCollaboratorByEmail(eventId, email);
     res.status(201).json({ success: true, data: event });
   });
 
@@ -27,5 +30,11 @@ export class EventController {
       Number(req.params.user)
     );
     res.status(201).json({ success: true, data: event });
+  });
+
+  getCollaboratorByEventId = asyncHandler(async (req: Request, res: Response) => {
+    const eventId = Number(req.params.event);
+    const collaborators = await this.eventService.getCollaboratorByEventId(eventId);
+    res.status(200).json({ success: true, data: collaborators });
   });
 }

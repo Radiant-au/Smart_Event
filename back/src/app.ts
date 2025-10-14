@@ -14,9 +14,9 @@ app.use(
     credentials: true,
   })
 );
-app.use(errorHandler);
 app.use(express.json());
 app.use("/api", route);
+app.use(errorHandler);
 app.get("/", (req, res) => res.send("api is working"));
 
 // DB connection
