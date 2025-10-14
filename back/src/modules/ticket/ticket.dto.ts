@@ -34,3 +34,11 @@ export interface TicketCountDto {
     used: number;
     unused: number;
 }
+
+// Response item for getTicketByBatch. For static batches, only code and status will be present.
+export interface TicketSummaryDto {
+    code: string;
+    status: string;
+    qrUrl?: string | null;
+    dynamicResult?: string | null;
+}

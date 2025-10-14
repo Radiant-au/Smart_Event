@@ -31,3 +31,14 @@ export interface TicketCountResponse {
 export const getTicketCountByBatchId = async (batchId: number) => {
   return apiClient.get<{ success: boolean; data: TicketCountResponse }>(`/ticket/count/${batchId}`);
 };
+
+export interface TicketSummaryDto {
+  code: string;
+  status: string;
+  qrUrl?: string | null;
+  dynamicResult?: string | null;
+}
+
+export const getTicketsByBatch = async (batchId: number) => {
+  return apiClient.get<{ success: boolean; data: TicketSummaryDto[] }>(`/ticket/by-batch/${batchId}`);
+};

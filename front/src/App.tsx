@@ -12,6 +12,7 @@ import TicketBatches from "./pages/Events/TicketBatches";
 import Scanner from "./pages/Tickets/Scanner";
 import { useAuthContext } from "@/context/auth-context";
 import TicketLayoutEditor from "./pages/Events/TicketLayoutEditor";
+import TicketsPage from "./pages/Tickets/TicketsPage";
 
 function App() {
   const { isAuthenticated } = useAuthContext();
@@ -75,6 +76,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <TicketLayoutEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/batches/:batchId/tickets"
+            element={
+              <ProtectedRoute>
+                <TicketsPage />
               </ProtectedRoute>
             }
           />

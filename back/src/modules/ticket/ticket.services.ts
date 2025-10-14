@@ -1,4 +1,4 @@
-import { AddDynamicDto, ScanDto, ticketDesignInfoDto, TicketCountDto, TicketDto } from "./ticket.dto";
+import { AddDynamicDto, ScanDto, ticketDesignInfoDto, TicketCountDto, TicketDto, TicketSummaryDto } from "./ticket.dto";
 import { Ticket } from "./ticket.entity";
 import { BaseService } from "../../utils/base.services";
 import { v4 as uuidv4 } from "uuid";
@@ -8,6 +8,7 @@ import QRCode from "qrcode";
 import sharp from "sharp";
 import fs from "fs";
 import path from "path";
+import { TicketBatchRepo } from "../ticket_batch/ticket_batch.repo";
 
 export class TicketService extends BaseService<Ticket> {
   private rouletteResultRepo = RouletteResultRepo;
@@ -78,70 +79,69 @@ export class TicketService extends BaseService<Ticket> {
     return await this.repo.save(ticket);
   }
 
-  async generateTicketWithCode(ticketDesignInfo : ticketDesignInfoDto , ticketfile : Express.Multer.File , batchId : number) {
-    
-      if (!ticketfile) {
-        throw new Error("No image uploaded.");
-      }
+  async generateTicketWithCode(ticketDesignInfo: ticketDesignInfoDto, ticketfile: Express.Multer.File, batchId: number) {
+    if (!ticketfile) {
+      throw new Error("No image uploaded.");
+    }
 
-      const imagePath = ticketfile.path;
-      const ticketCode = ticketDesignInfo.code || "DEFAULT-CODE";
+    const imagePath = ticketfile.path;
+    const ticketCode = ticketDesignInfo.code || "DEFAULT-CODE";
 
-      // --- 1️⃣ Generate barcode
-      const barcodeBuffer = await bwipjs.toBuffer({
-        bcid: "code128",
-        text: ticketCode,
-        scale: 3, 
-        height: 10,
-        includetext: false
+    // --- 1️⃣ Generate barcode
+    const barcodeBuffer = await bwipjs.toBuffer({
+      bcid: "code128",
+      text: ticketCode,
+      scale: 3,
+      height: 10,
+      includetext: false,
+    });
+
+    const resizedBarcode = await sharp(barcodeBuffer)
+      .resize(parseInt(ticketDesignInfo.barcodeWidth), parseInt(ticketDesignInfo.barcodeHeight))
+      .toBuffer();
+
+    // --- 2️⃣ Generate QR (only in dynamic mode)
+    let qrBuffer: Buffer | null = null;
+    if (ticketDesignInfo.mode === "dynamic") {
+      const qrData = `https://smartevent.io/verify/${ticketCode}`;
+      const qrImageDataUrl = await QRCode.toDataURL(qrData, {
+        margin: 1,
+        width: 300,
       });
+      const qrBase64 = qrImageDataUrl.split(",")[1];
+      qrBuffer = Buffer.from(qrBase64, "base64");
+    }
 
-      const resizedBarcode = await sharp(barcodeBuffer)
-        .resize(parseInt(ticketDesignInfo.barcodeWidth), parseInt(ticketDesignInfo.barcodeHeight))
+    // --- 3️⃣ Compose final image
+    const composites: sharp.OverlayOptions[] = [
+      {
+        input: resizedBarcode,
+        left: parseInt(ticketDesignInfo.barcodeX),
+        top: parseInt(ticketDesignInfo.barcodeY),
+      },
+    ];
+
+    if (ticketDesignInfo.mode === "dynamic" && qrBuffer) {
+      const resizedQR = await sharp(qrBuffer)
+        .resize(parseInt(ticketDesignInfo.qrWidth), parseInt(ticketDesignInfo.qrHeight))
         .toBuffer();
 
-      // --- 2️⃣ Generate QR (only in dynamic mode)
-      let qrBuffer: Buffer | null = null;
-      if (ticketDesignInfo.mode === "dynamic") {
-        const qrData = `https://smartevent.io/verify/${ticketCode}`;
-        const qrImageDataUrl = await QRCode.toDataURL(qrData, {
-          margin: 1,
-          width: 300,
-        });
-        const qrBase64 = qrImageDataUrl.split(",")[1];
-        qrBuffer = Buffer.from(qrBase64, "base64");
-      }
+      composites.push({
+        input: resizedQR,
+        left: parseInt(ticketDesignInfo.qrX),
+        top: parseInt(ticketDesignInfo.qrY),
+      });
+    }
 
-      // --- 3️⃣ Compose final image
-      const composites: sharp.OverlayOptions[] = [
-        {
-          input: resizedBarcode,
-          left: parseInt(ticketDesignInfo.barcodeX),
-          top: parseInt(ticketDesignInfo.barcodeY),
-        },
-      ];
+    const thisBatchId = batchId;
+    const outputPath = path.join("temp", `batch-${thisBatchId}`, `final-${Date.now()}.png`);
 
-      if (ticketDesignInfo.mode === "dynamic" && qrBuffer) {
-        const resizedQR = await sharp(qrBuffer)
-          .resize(parseInt(ticketDesignInfo.qrWidth), parseInt(ticketDesignInfo.qrHeight))
-          .toBuffer();
+    await sharp(imagePath).composite(composites).toFile(outputPath);
 
-        composites.push({
-          input: resizedQR,
-          left: parseInt(ticketDesignInfo.qrX),
-          top: parseInt(ticketDesignInfo.qrY),
-        });
-      }
+    // fs.unlinkSync(imagePath);
 
-      const thisBatchId = batchId;
-      const outputPath = path.join("temp", `batch-${thisBatchId}`, `final-${Date.now()}.png`);
-
-      await sharp(imagePath).composite(composites).toFile(outputPath);
-
-      // fs.unlinkSync(imagePath);
-
-      return path.resolve(outputPath);
-  };
+    return path.resolve(outputPath);
+  }
 
   async getTicketCountByBatchId(batchId: number): Promise<TicketCountDto> {
     const total = await this.repo.count({ where: { batch: { id: batchId } } });
@@ -149,5 +149,23 @@ export class TicketService extends BaseService<Ticket> {
     const unused = await this.repo.count({ where: { batch: { id: batchId }, status: "unused" } });
     return { batchId, total, used, unused };
   }
+
+  async getTicketByBatch(batchId: number): Promise<TicketSummaryDto[]> {
+    // Determine if batch is dynamic
+    const batch = await TicketBatchRepo.findOneByOrFail({ id: batchId });
+    const isDynamic = !!batch.dynamic;
+    // Load tickets for batch
+    const tickets = await this.repo.find({ where: { batch: { id: batchId } } });
+    if (!isDynamic) {
+      // Static: only code and status
+      return tickets.map((t) => ({ code: t.code, status: t.status }));
+    }
+    // Dynamic: include qrUrl and dynamicResult when present
+    return tickets.map((t) => ({
+      code: t.code,
+      status: t.status,
+      qrUrl: t.qrUrl ?? null,
+      dynamicResult: t.dynamicResult ?? null,
+    }));
+  }
 }
- 

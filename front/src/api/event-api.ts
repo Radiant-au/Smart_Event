@@ -29,6 +29,12 @@ export interface EventEntity {
   collaborators?: Array<{ id: number; name?: string; email?: string }>;
 }
 
+export interface CollaboratorDto {
+  id: number;
+  name: string;
+  email: string;
+}
+
 /**
  * =====================
  *  Event API Calls
@@ -43,9 +49,9 @@ export const createEvent = async (data: EventDto) => {
 };
 
 // Add a collaborator to an event
-export const addCollaborator = async (userId: number, eventId: number) => {
-  // POST /events/add/:user/:event
-  const response = await apiClient.post(`/event/add/${userId}/${eventId}`);
+export const addCollaborator = async (email: string, eventId: number) => {
+  // POST /event/add/:event  with { email } in body
+  const response = await apiClient.post(`/event/add/${eventId}`, { email });
   return response; // { success: true, data: EventEntity }
 };
 
@@ -54,4 +60,11 @@ export const removeCollaborator = async (userId: number, eventId: number) => {
   // POST /events/remove/:user/:event
   const response = await apiClient.post(`/event/remove/${userId}/${eventId}`);
   return response; // { success: true, data: EventEntity }
+};
+
+// Get collaborators for an event (name and email)
+export const getCollaborators = async (eventId: number) => {
+  const response = await apiClient.get(`/event/collaborators/${eventId}`);
+  // Expecting { success: true, data: CollaboratorDto[] }
+  return response;
 };

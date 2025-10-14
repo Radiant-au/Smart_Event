@@ -4,3 +4,9 @@ export interface EventDto {
     userId: number;
 }
 
+export interface CollaboratorDto {
+    id: number;
+    name: string;
+    email: string;
+}
+

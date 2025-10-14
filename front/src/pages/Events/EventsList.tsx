@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Calendar, MapPin, Plus, Ticket } from 'lucide-react';
+import { Calendar, MapPin, Plus, Ticket, Users, Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getCurrentUser } from '@/api/auth-api';
-import { addCollaborator, removeCollaborator } from '@/api/event-api';
+import { addCollaborator, removeCollaborator, getCollaborators } from '@/api/event-api';
 import { Input } from '@/components/ui/input';
 
 const EventsList = () => {
@@ -19,13 +19,28 @@ const EventsList = () => {
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [collabInput, setCollabInput] = useState<Record<number, string>>({}); // eventId -> userId string
+  const [collaborators, setCollaborators] = useState<Record<number, Array<{ id: number; name: string; email: string }>>>({});
 
   const load = async () => {
     try {
       setLoading(true);
       const res = await getCurrentUser();
       const me = (res as any).data?.data ?? res.data;
-      setEvents(me.events ?? []);
+      const eventsList = me.events ?? [];
+      setEvents(eventsList);
+      // Fetch collaborators for each event
+      const entries = await Promise.all(
+        eventsList.map(async (ev: { id: number }) => {
+          try {
+            const resp = await getCollaborators(ev.id);
+            const data = (resp as any).data?.data ?? resp.data;
+            return [ev.id, Array.isArray(data) ? data : []] as const;
+          } catch {
+            return [ev.id, []] as const;
+          }
+        })
+      );
+      setCollaborators(Object.fromEntries(entries));
     } finally {
       setLoading(false);
     }
@@ -116,11 +131,20 @@ const EventsList = () => {
                     </Button>
                   </Link>
 
-                  <div className="border-t pt-4 space-y-2">
-                    <div className="text-sm font-medium">Collaborators</div>
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Users className="h-4 w-4 text-indigo-500" />
+                        Collaborators
+                      </div>
+                      <div className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
+                        {(collaborators[event.id]?.length ?? 0)} member(s)
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <Input
-                        placeholder="User ID"
+                        placeholder="User Email"
+                        type="email"
                         value={collabInput[event.id] || ''}
                         onChange={(e) =>
                           setCollabInput((s) => ({ ...s, [event.id]: e.target.value }))
@@ -129,28 +153,60 @@ const EventsList = () => {
                       <Button
                         size="sm"
                         onClick={async () => {
-                          const userId = Number(collabInput[event.id]);
-                          if (!userId) return;
-                          await addCollaborator(userId, event.id);
+                          const email = (collabInput[event.id] || '').trim();
+                          if (!email) return;
+                          await addCollaborator(email, event.id);
                           setCollabInput((s) => ({ ...s, [event.id]: '' }));
                           await load();
                         }}
                       >
                         Add
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={async () => {
-                          const userId = Number(collabInput[event.id]);
-                          if (!userId) return;
-                          await removeCollaborator(userId, event.id);
-                          setCollabInput((s) => ({ ...s, [event.id]: '' }));
-                          await load();
-                        }}
-                      >
-                        Remove
-                      </Button>
+                    </div>
+                    <div>
+                      {(collaborators[event.id] && collaborators[event.id].length > 0) ? (
+                        <div className="flex flex-col gap-2 mt-2 w-full">
+                          {collaborators[event.id].map((c, idx) => {
+                            const initials = (c.name || '').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase() || 'U';
+                            return (
+                              <div
+                                key={`${event.id}-${c.id}`}
+                                className="group flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200/70 dark:border-gray-800/70 bg-gradient-to-br from-white/70 to-gray-50/50 dark:from-gray-900/50 dark:to-gray-900/30 shadow-sm hover:shadow-md transition-all w-full"
+                              >
+                                <div className="h-7 w-7 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs font-semibold ring-2 ring-white dark:ring-gray-900">
+                                  {initials}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-sm font-medium leading-5 truncate">
+                                    {c.name}
+                                  </div>
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground truncate">
+                                    <Mail className="h-3.5 w-3.5" />
+                                    <span className="truncate">{c.email}</span>
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="secondary"
+                                  size="sm"
+                                  className="ml-auto h-7 bg-red-100 text-red-700 hover:bg-red-200 border border-red-200"
+                                  onClick={async () => {
+                                    await removeCollaborator(c.id, event.id);
+                                    setCollaborators((prev) => ({
+                                      ...prev,
+                                      [event.id]: (prev[event.id] || []).filter((x) => x.id !== c.id),
+                                    }));
+                                  }}
+                                  title="Remove collaborator"
+                                >
+                                  Remove
+                                </Button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-sm text-muted-foreground">No collaborators</div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
