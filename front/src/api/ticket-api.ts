@@ -9,15 +9,17 @@ import apiClient from "@/api/api-client";
  * - POST /dynamic/:token   -> addDynamicData
  */
 
-export interface ValidateTicketDto {
-  barcode: string;
-}
-
-export const validateTicket = async (data: ValidateTicketDto) => {
+export const validateTicket = async (data: {
+  code: string;
+  userId: string;
+}) => {
   return apiClient.post(`/ticket/validate`, data);
 };
 
-export const addDynamicDataToTicket = async (token: string, data: Record<string, any>) => {
+export const addDynamicDataToTicket = async (
+  token: string,
+  data: Record<string, any>
+) => {
   return apiClient.post(`/ticket/dynamic/${encodeURIComponent(token)}`, data);
 };
 
@@ -29,7 +31,9 @@ export interface TicketCountResponse {
 }
 
 export const getTicketCountByBatchId = async (batchId: number) => {
-  return apiClient.get<{ success: boolean; data: TicketCountResponse }>(`/ticket/count/${batchId}`);
+  return apiClient.get<{ success: boolean; data: TicketCountResponse }>(
+    `/ticket/count/${batchId}`
+  );
 };
 
 export interface TicketSummaryDto {
@@ -40,5 +44,7 @@ export interface TicketSummaryDto {
 }
 
 export const getTicketsByBatch = async (batchId: number) => {
-  return apiClient.get<{ success: boolean; data: TicketSummaryDto[] }>(`/ticket/by-batch/${batchId}`);
+  return apiClient.get<{ success: boolean; data: TicketSummaryDto[] }>(
+    `/ticket/by-batch/${batchId}`
+  );
 };
