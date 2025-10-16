@@ -1,33 +1,36 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Calendar, Plus, Ticket, Scan } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { getCurrentUser } from '@/api/auth-api';
-import { getBatchesByEventId } from '@/api/batch-api';
-import { getTicketCountByBatchId } from '@/api/ticket-api';
+import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Calendar, Plus, Ticket, Scan } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/api/auth-api";
+import { getBatchesByEventId } from "@/api/batch-api";
+import { getTicketCountByBatchId } from "@/api/ticket-api";
 
 const Dashboard = () => {
-  const [me, setMe] = useState<
-    | null
-    | {
-        id: number;
-        name: string;
-        email: string;
-        createdAt: string;
-        updatedAt: string;
-        events: Array<{
-          id: number;
-          name: string;
-          code: string;
-          description: string | null;
-          startDate: string | null;
-          endDate: string | null;
-          location: string | null;
-          createdAt: string;
-        }>;
-      }
-  >(null);
+  const [me, setMe] = useState<null | {
+    id: number;
+    name: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+    events: Array<{
+      id: number;
+      name: string;
+      code: string;
+      description: string | null;
+      startDate: string | null;
+      endDate: string | null;
+      location: string | null;
+      createdAt: string;
+    }>;
+  }>(null);
 
   const userEvents = me?.events ?? [];
   const [totalBatchesRemote, setTotalBatchesRemote] = useState(0);
@@ -35,7 +38,7 @@ const Dashboard = () => {
   const [usedTicketsRemote, setUsedTicketsRemote] = useState(0);
 
   useEffect(() => {
-    const token = localStorage.getItem('code_jwt');
+    const token = localStorage.getItem("code_jwt");
     if (!token) return;
 
     const fetchMe = async () => {
@@ -64,7 +67,9 @@ const Dashboard = () => {
           userEvents.map((e) => getBatchesByEventId(e.id))
         );
 
-        const batchLists = batchesPerEvent.map((res: any) => (res.data?.data ?? res.data) || []);
+        const batchLists = batchesPerEvent.map(
+          (res: any) => (res.data?.data ?? res.data) || []
+        );
         const allBatches = batchLists.flat();
 
         setTotalBatchesRemote(allBatches.length);
@@ -72,14 +77,17 @@ const Dashboard = () => {
         const counts = await Promise.all(
           allBatches.map((b: any) =>
             getTicketCountByBatchId(b.id)
-              .then((res: any) => (res.data?.data ?? res.data))
+              .then((res: any) => res.data?.data ?? res.data)
               .catch(() => ({ total: 0, used: 0 }))
           )
         );
 
         const totals = counts.reduce(
           (acc: { total: number; used: number }, c: any) => {
-            return { total: acc.total + (c.total || 0), used: acc.used + (c.used || 0) };
+            return {
+              total: acc.total + (c.total || 0),
+              used: acc.used + (c.used || 0),
+            };
           },
           { total: 0, used: 0 }
         );
@@ -102,7 +110,7 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-8 text-white shadow-xl">
             <h1 className="text-4xl font-bold mb-2">
-              Welcome back, {me?.name || 'User'}!
+              Welcome back, {me?.name || "User"}!
             </h1>
             <p className="text-blue-100 text-lg">
               Manage your events and tickets from your dashboard
@@ -198,7 +206,7 @@ const Dashboard = () => {
                   View All Events
                 </Button>
               </Link>
-              <Link to="/scan">
+              <Link to="/scan" state={{ userId: me?.id }}>
                 <Button className="w-full justify-start" variant="outline">
                   <Scan className="mr-2 h-4 w-4" />
                   Scan Tickets
@@ -211,9 +219,7 @@ const Dashboard = () => {
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="pb-3">
               <CardTitle>Recent Events</CardTitle>
-              <CardDescription>
-                Your recently created events
-              </CardDescription>
+              <CardDescription>Your recently created events</CardDescription>
             </CardHeader>
             <CardContent>
               {userEvents.length === 0 ? (
@@ -243,9 +249,10 @@ const Dashboard = () => {
                             try {
                               return new Date(dateStr).toLocaleDateString();
                             } catch {
-                              return '';
+                              return "";
                             }
-                          })()} {event.location ? `• ${event.location}` : ''}
+                          })()}{" "}
+                          {event.location ? `• ${event.location}` : ""}
                         </p>
                       </div>
                     </Link>

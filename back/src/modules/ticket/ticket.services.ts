@@ -59,10 +59,15 @@ export class TicketService extends BaseService<Ticket> {
   }
 
   async validateScan(dto: ScanDto) {
-    const ticket = await this.repo.findOneOrFail({
+    const ticket = await this.repo.findOne({
       where: { code: dto.code },
       relations: ["batch.event.creator", "batch.event.collaborators"],
     });
+    if (!ticket) {
+      const err: any = new Error("Invalid ticket code");
+      err.status = 404;
+      throw err;
+    }
     const scanner = Number(dto.userId);
     if (
       scanner !== ticket.batch.event.creator.id &&
@@ -70,10 +75,14 @@ export class TicketService extends BaseService<Ticket> {
         (collaborator) => collaborator.id === scanner
       )
     ) {
-      throw new Error("You are not the ticket creator or collaborator");
+      const err: any = new Error("You are not the ticket creator or collaborator");
+      err.status = 403;
+      throw err;
     }
     if (ticket.status === "used") {
-      throw new Error("Ticket already used");
+      const err: any = new Error("Ticket already used");
+      err.status = 409;
+      throw err;
     }
     ticket.status = "used";
     return await this.repo.save(ticket);
