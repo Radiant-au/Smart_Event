@@ -1,25 +1,39 @@
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Calendar, MapPin, Plus, Ticket, Users, Mail } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { getCurrentUser } from '@/api/auth-api';
-import { addCollaborator, removeCollaborator, getCollaborators } from '@/api/event-api';
-import { Input } from '@/components/ui/input';
+import { Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Calendar, MapPin, Plus, Ticket, Users, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/api/auth-api";
+import {
+  addCollaborator,
+  removeCollaborator,
+  getCollaborators,
+} from "@/api/event-api";
+import { Input } from "@/components/ui/input";
 
 const EventsList = () => {
-  const [events, setEvents] = useState<Array<{
-    id: number;
-    name: string;
-    description?: string | null;
-    startDate?: string | null;
-    endDate?: string | null;
-    location?: string | null;
-    createdAt: string;
-  }>>([]);
+  const [events, setEvents] = useState<
+    Array<{
+      id: number;
+      name: string;
+      description?: string | null;
+      startDate?: string | null;
+      endDate?: string | null;
+      location?: string | null;
+      createdAt: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(true);
-  const [collabInput, setCollabInput] = useState<Record<number, string>>({}); // eventId -> userId string
-  const [collaborators, setCollaborators] = useState<Record<number, Array<{ id: number; name: string; email: string }>>>({});
+  const [collabInput, setCollabInput] = useState<Record<number, string>>({});
+  const [collaborators, setCollaborators] = useState<
+    Record<number, Array<{ id: number; name: string; email: string }>>
+  >({});
 
   const load = async () => {
     try {
@@ -28,6 +42,7 @@ const EventsList = () => {
       const me = (res as any).data?.data ?? res.data;
       const eventsList = me.events ?? [];
       setEvents(eventsList);
+
       // Fetch collaborators for each event
       const entries = await Promise.all(
         eventsList.map(async (ev: { id: number }) => {
@@ -55,15 +70,15 @@ const EventsList = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">My Events</h1>
+            <h1 className="text-4xl font-bold mb-2">My Card Groups</h1>
             <p className="text-muted-foreground">
-              Manage all your events in one place
+              Manage all your groups in one place
             </p>
           </div>
           <Link to="/events/create">
             <Button>
               <Plus className="mr-2 h-4 w-4" />
-              Create Event
+              Create Group
             </Button>
           </Link>
         </div>
@@ -86,7 +101,7 @@ const EventsList = () => {
               <Link to="/events/create">
                 <Button>
                   <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Event
+                  Create Your First Card
                 </Button>
               </Link>
             </CardContent>
@@ -111,23 +126,25 @@ const EventsList = () => {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center text-muted-foreground">
                       <Calendar className="mr-2 h-4 w-4" />
-                      {new Date(event.startDate || event.createdAt).toLocaleDateString('en-US', {
-                        weekday: 'short',
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                        // time may not be set
+                      {new Date(
+                        event.startDate || event.createdAt
+                      ).toLocaleDateString("en-US", {
+                        weekday: "short",
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
                       })}
                     </div>
                     <div className="flex items-center text-muted-foreground">
                       <MapPin className="mr-2 h-4 w-4" />
-                      {event.location || '—'}
+                      {event.location || "—"}
                     </div>
                   </div>
+
                   <Link to={`/events/${event.id}/batches`}>
                     <Button className="w-full my-4" variant="outline">
                       <Ticket className="mr-2 h-4 w-4" />
-                      Manage Ticket Batches
+                      Manage Card Batches
                     </Button>
                   </Link>
 
@@ -138,36 +155,47 @@ const EventsList = () => {
                         Collaborators
                       </div>
                       <div className="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300">
-                        {(collaborators[event.id]?.length ?? 0)} member(s)
+                        {collaborators[event.id]?.length ?? 0} member(s)
                       </div>
                     </div>
+
                     <div className="flex gap-2">
                       <Input
                         placeholder="User Email"
                         type="email"
-                        value={collabInput[event.id] || ''}
+                        value={collabInput[event.id] || ""}
                         onChange={(e) =>
-                          setCollabInput((s) => ({ ...s, [event.id]: e.target.value }))
+                          setCollabInput((s) => ({
+                            ...s,
+                            [event.id]: e.target.value,
+                          }))
                         }
                       />
                       <Button
                         size="sm"
                         onClick={async () => {
-                          const email = (collabInput[event.id] || '').trim();
+                          const email = (collabInput[event.id] || "").trim();
                           if (!email) return;
                           await addCollaborator(email, event.id);
-                          setCollabInput((s) => ({ ...s, [event.id]: '' }));
+                          setCollabInput((s) => ({ ...s, [event.id]: "" }));
                           await load();
                         }}
                       >
                         Add
                       </Button>
                     </div>
+
                     <div>
-                      {(collaborators[event.id] && collaborators[event.id].length > 0) ? (
+                      {collaborators[event.id]?.length > 0 ? (
                         <div className="flex flex-col gap-2 mt-2 w-full">
-                          {collaborators[event.id].map((c, idx) => {
-                            const initials = (c.name || '').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase() || 'U';
+                          {collaborators[event.id].map((c) => {
+                            const initials =
+                              (c.name || "")
+                                .split(" ")
+                                .map((p) => p[0])
+                                .slice(0, 2)
+                                .join("")
+                                .toUpperCase() || "U";
                             return (
                               <div
                                 key={`${event.id}-${c.id}`}
@@ -185,27 +213,50 @@ const EventsList = () => {
                                     <span className="truncate">{c.email}</span>
                                   </div>
                                 </div>
-                                <Button
-                                  variant="secondary"
-                                  size="sm"
-                                  className="ml-auto h-7 bg-red-100 text-red-700 hover:bg-red-200 border border-red-200"
-                                  onClick={async () => {
-                                    await removeCollaborator(c.id, event.id);
-                                    setCollaborators((prev) => ({
-                                      ...prev,
-                                      [event.id]: (prev[event.id] || []).filter((x) => x.id !== c.id),
-                                    }));
-                                  }}
-                                  title="Remove collaborator"
-                                >
-                                  Remove
-                                </Button>
+
+                                <div className="ml-auto flex gap-2">
+                                  {/* View Button navigates to scanned tickets page */}
+                                  <Link
+                                    to={`/batches/${c.id}/scanned-tickets`}
+                                    state={{ collaboratorName: c.name }}
+                                  >
+                                    <Button
+                                      variant="secondary"
+                                      size="sm"
+                                      className="h-7 bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200"
+                                      title="View scanned cards"
+                                    >
+                                      View
+                                    </Button>
+                                  </Link>
+
+                                  {/* Remove Button */}
+                                  <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    className="h-7 bg-red-100 text-red-700 hover:bg-red-200 border border-red-200"
+                                    onClick={async () => {
+                                      await removeCollaborator(c.id, event.id);
+                                      setCollaborators((prev) => ({
+                                        ...prev,
+                                        [event.id]: (
+                                          prev[event.id] || []
+                                        ).filter((x) => x.id !== c.id),
+                                      }));
+                                    }}
+                                    title="Remove collaborator"
+                                  >
+                                    Remove
+                                  </Button>
+                                </div>
                               </div>
                             );
                           })}
                         </div>
                       ) : (
-                        <div className="mt-2 text-sm text-muted-foreground">No collaborators</div>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          No collaborators
+                        </div>
                       )}
                     </div>
                   </div>

@@ -75,7 +75,7 @@ const Register = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-          <CardDescription>Sign up for a SmartEvents account</CardDescription>
+          <CardDescription>Sign up for a Scanova account!</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>

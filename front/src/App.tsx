@@ -13,6 +13,7 @@ import Scanner from "./pages/Tickets/Scanner";
 import { useAuthContext } from "@/context/auth-context";
 import TicketLayoutEditor from "./pages/Events/TicketLayoutEditor";
 import TicketsPage from "./pages/Tickets/TicketsPage";
+import ScannedTicketsPage from "./pages/Events/ScannedTicketsPage";
 
 function App() {
   const { isAuthenticated } = useAuthContext();
@@ -33,11 +34,9 @@ function App() {
               )
             }
           />
-
           {/*  Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
           {/*  Protected Routes */}
           <Route
             path="/dashboard"
@@ -96,6 +95,14 @@ function App() {
             }
           />
 
+          <Route
+            path="/batches/:batchId/scanned-tickets"
+            element={
+              <ProtectedRoute>
+                <ScannedTicketsPage />
+              </ProtectedRoute>
+            }
+          />
           {/* 🛑 Fallback route */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

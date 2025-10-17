@@ -1,10 +1,10 @@
-import { Link } from 'react-router-dom';
-import { Button } from './ui/button';
-import { Ticket, Moon, Sun, LogOut, LayoutDashboard } from 'lucide-react';
-import { useTheme } from 'next-themes';
-import { useAuthContext } from '@/context/auth-context';
-import { useEffect, useState } from 'react';
-import { getCurrentUser } from '@/api/auth-api';
+import { Link } from "react-router-dom";
+import { Button } from "./ui/button";
+import { Ticket, Moon, Sun, LogOut, LayoutDashboard } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useAuthContext } from "@/context/auth-context";
+import { useEffect, useState } from "react";
+import { getCurrentUser } from "@/api/auth-api";
 
 const Navbar = () => {
   const { theme, setTheme } = useTheme();
@@ -26,8 +26,15 @@ const Navbar = () => {
 
   const handleLogout = () => {
     logout();
-    // logout already navigates to /login in the hook
   };
+
+  const initials =
+    (me?.name || "")
+      .split(" ")
+      .map((p) => p[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase() || "U";
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,7 +45,7 @@ const Navbar = () => {
               <Ticket className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              SmartEvents
+              Scanova
             </span>
           </Link>
 
@@ -51,16 +58,22 @@ const Navbar = () => {
                     Dashboard
                   </Button>
                 </Link>
-                <span className="text-sm text-muted-foreground hidden sm:inline-block">
-                   {me?.name ?? 'User'}
-                </span>
+
+                <div className="flex items-center space-x-2">
+                  <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold shadow-md">
+                    {initials}
+                  </div>
+                  <span className="hidden sm:inline-block text-sm font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent tracking-wide">
+                    {me?.name ?? "User"}
+                  </span>
+                </div>
               </>
             )}
 
             <Button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
-              {theme === 'dark' ? (
+              {theme === "dark" ? (
                 <Sun className="h-5 w-5" />
               ) : (
                 <Moon className="h-5 w-5" />
