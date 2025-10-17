@@ -1,35 +1,47 @@
-import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../../components/ui/dialog';
-import { ArrowLeft, Plus, Ticket, Eye, AppWindow } from 'lucide-react';
-import { useToast } from '../../hooks/use-toast';
-import { useEffect } from 'react';
-import { getCurrentUser } from '@/api/auth-api';
-import { createTicketBatch, createDynamicTicketBatch, getBatchesByEventId } from '@/api/batch-api';
-import { getTicketCountByBatchId } from '@/api/ticket-api';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { Label } from "../../components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../../components/ui/dialog";
+import { ArrowLeft, Plus, Ticket, Eye, AppWindow } from "lucide-react";
+import { useToast } from "../../hooks/use-toast";
+import { getCurrentUser } from "@/api/auth-api";
+import {
+  createTicketBatch,
+  createDynamicTicketBatch,
+  getBatchesByEventId,
+} from "@/api/batch-api";
+import { getTicketCountByBatchId } from "@/api/ticket-api";
+
 const TicketBatches = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Using API directly; no local store for batches/tickets
-
-  const [event, setEvent] = useState<
-    | null
-    | {
-        id: number;
-        name: string;
-        description?: string | null;
-        startDate?: string | null;
-        endDate?: string | null;
-        location?: string | null;
-        createdAt: string;
-      }
-  >(null);
+  const [event, setEvent] = useState<null | {
+    id: number;
+    name: string;
+    description?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    location?: string | null;
+    createdAt: string;
+  }>(null);
   const [loadingEvent, setLoadingEvent] = useState(true);
 
   useEffect(() => {
@@ -39,7 +51,9 @@ const TicketBatches = () => {
         setLoadingEvent(true);
         const res = await getCurrentUser();
         const me = (res as any).data?.data ?? res.data;
-        const found = (me.events || []).find((e: any) => e.id === Number(eventId));
+        const found = (me.events || []).find(
+          (e: any) => e.id === Number(eventId)
+        );
         setEvent(found || null);
       } finally {
         setLoadingEvent(false);
@@ -47,9 +61,12 @@ const TicketBatches = () => {
     };
     load();
   }, [eventId]);
+
   const [remoteBatches, setRemoteBatches] = useState<any[]>([]);
   const batches = remoteBatches;
-  const [batchCounts, setBatchCounts] = useState<Record<number, { total: number; used: number; unused: number }>>({});
+  const [batchCounts, setBatchCounts] = useState<
+    Record<number, { total: number; used: number; unused: number }>
+  >({});
 
   const fetchBatches = async (eid: number) => {
     try {
@@ -62,9 +79,7 @@ const TicketBatches = () => {
   };
 
   useEffect(() => {
-    if (eventId) {
-      fetchBatches(Number(eventId));
-    }
+    if (eventId) fetchBatches(Number(eventId));
   }, [eventId]);
 
   useEffect(() => {
@@ -74,7 +89,10 @@ const TicketBatches = () => {
           try {
             const res = await getTicketCountByBatchId(b.id);
             const data = (res as any).data?.data ?? res.data?.data ?? res.data;
-            return [b.id, { total: data.total, used: data.used, unused: data.unused }] as const;
+            return [
+              b.id,
+              { total: data.total, used: data.used, unused: data.unused },
+            ] as const;
           } catch (e) {
             return [b.id, { total: 0, used: 0, unused: 0 }] as const;
           }
@@ -82,15 +100,13 @@ const TicketBatches = () => {
       );
       setBatchCounts(Object.fromEntries(entries));
     };
-    if (batches.length > 0) {
-      loadCounts();
-    }
+    if (batches.length > 0) loadCounts();
   }, [batches]);
 
-  const [batchName, setBatchName] = useState('');
-  const [price, setPrice] = useState('');
-  const [totalTickets, setTotalTickets] = useState('');
-  const [batchType, setBatchType] = useState<'static' | 'dynamic'>('static');
+  const [batchName, setBatchName] = useState("");
+  const [price, setPrice] = useState("");
+  const [totalTickets, setTotalTickets] = useState("");
+  const [batchType, setBatchType] = useState<"normal" | "gamify">("normal");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -99,10 +115,10 @@ const TicketBatches = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="py-8 text-center">
-            <p className="text-muted-foreground mb-4">{loadingEvent ? 'Loading event...' : 'Event not found'}</p>
-            <Button onClick={() => navigate('/events')}>
-              Back to Events
-            </Button>
+            <p className="text-muted-foreground mb-4">
+              {loadingEvent ? "Loading Batches..." : "Ticket Batch not found"}
+            </p>
+            <Button onClick={() => navigate("/events")}>Back</Button>
           </CardContent>
         </Card>
       </div>
@@ -113,10 +129,10 @@ const TicketBatches = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (batchType === 'static') {
+      if (batchType === "normal") {
         await createTicketBatch(event.id, {
           name: batchName,
-          price: price, // backend accepts string
+          price: price,
           ticket: parseInt(totalTickets),
         });
       } else {
@@ -124,27 +140,28 @@ const TicketBatches = () => {
           name: batchName,
           ticket: parseInt(totalTickets),
         });
-        // Not updating local store for dynamic since store schema requires totalTickets.
       }
 
       toast({
-        title: 'Batch created',
-        description: batchType === 'static' ? 'Static ticket batch created' : 'Dynamic ticket batch created',
+        title: "Batch created",
+        description:
+          batchType === "normal"
+            ? "Normal card batch created"
+            : "Gamify card batch created",
       });
 
-      setBatchName('');
-      setPrice('');
-      setTotalTickets('');
-      setBatchType('static');
+      setBatchName("");
+      setPrice("");
+      setTotalTickets("");
+      setBatchType("normal");
       setIsDialogOpen(false);
 
-      // Refresh remote list
       fetchBatches(event.id);
     } catch (error) {
       toast({
-        title: 'Error',
-        description: 'Failed to create batch',
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create batch",
+        variant: "destructive",
       });
     } finally {
       setLoading(false);
@@ -152,26 +169,24 @@ const TicketBatches = () => {
   };
 
   const handleAddRoulette = (batch?: any) => {
-    const name = batch?.name ? ` for ${batch.name}` : '';
-    toast({ title: 'Add roulette', description: `Roulette configuration coming soon${name}` });
+    const name = batch?.name ? ` for ${batch.name}` : "";
+    toast({
+      title: "Add roulette",
+      description: `Roulette configuration coming soon${name}`,
+    });
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto px-4 py-8">
-        <Button
-          onClick={() => navigate('/events')}
-          className="mb-6"
-        >
+        <Button onClick={() => navigate("/events")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Events
+          Back
         </Button>
 
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">{event.name}</h1>
-          <p className="text-muted-foreground">
-            Manage ticket batches for this event
-          </p>
+          <p className="text-muted-foreground">Manage card for this batches</p>
         </div>
 
         <div className="flex justify-between items-center mb-6">
@@ -186,9 +201,7 @@ const TicketBatches = () => {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create New Batch</DialogTitle>
-                <DialogDescription>
-                  Add a new ticket batch for this event
-                </DialogDescription>
+                <DialogDescription>Add a new card batch</DialogDescription>
               </DialogHeader>
               <form onSubmit={handleCreateBatch} className="space-y-4">
                 <div className="space-y-2">
@@ -198,21 +211,21 @@ const TicketBatches = () => {
                       <input
                         type="radio"
                         name="batchType"
-                        value="static"
-                        checked={batchType === 'static'}
-                        onChange={() => setBatchType('static')}
+                        value="normal"
+                        checked={batchType === "normal"}
+                        onChange={() => setBatchType("normal")}
                       />
-                      Static ticket
+                      Normal card
                     </label>
                     <label className="flex items-center gap-2 text-sm">
                       <input
                         type="radio"
                         name="batchType"
-                        value="dynamic"
-                        checked={batchType === 'dynamic'}
-                        onChange={() => setBatchType('dynamic')}
+                        value="gamify"
+                        checked={batchType === "gamify"}
+                        onChange={() => setBatchType("gamify")}
                       />
-                      Dynamic ticket
+                      Gamify card
                     </label>
                   </div>
                 </div>
@@ -226,7 +239,7 @@ const TicketBatches = () => {
                     required
                   />
                 </div>
-                {batchType === 'static' && (
+                {batchType === "normal" && (
                   <div className="space-y-2">
                     <Label htmlFor="price">Price ($)</Label>
                     <Input
@@ -241,7 +254,7 @@ const TicketBatches = () => {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="totalTickets">Total Tickets</Label>
+                  <Label htmlFor="totalTickets">Total Cards</Label>
                   <Input
                     id="totalTickets"
                     type="number"
@@ -252,7 +265,7 @@ const TicketBatches = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? 'Creating...' : 'Create Batch'}
+                  {loading ? "Creating..." : "Create Batch"}
                 </Button>
               </form>
             </DialogContent>
@@ -265,16 +278,19 @@ const TicketBatches = () => {
               <Ticket className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
               <h3 className="text-xl font-semibold mb-2">No batches yet</h3>
               <p className="text-muted-foreground mb-6">
-                Create your first ticket batch to get started
+                Create your first card batch to get started
               </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {batches.map((batch) => {
-              const ticketsList = Array.isArray(batch.tickets) ? batch.tickets : [];
-              const generated = batchCounts[batch.id]?.total ?? ticketsList.length;
-              const isDynamic = Boolean((batch as any).dynamic);
+              const ticketsList = Array.isArray(batch.tickets)
+                ? batch.tickets
+                : [];
+              const generated =
+                batchCounts[batch.id]?.total ?? ticketsList.length;
+              const isGamify = Boolean((batch as any).dynamic);
               const price = Number(batch.price ?? 0).toFixed(2);
 
               return (
@@ -286,52 +302,78 @@ const TicketBatches = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <CardTitle className="text-lg font-semibold tracking-tight">{batch.name}</CardTitle>
+                        <CardTitle className="text-lg font-semibold tracking-tight">
+                          {batch.name}
+                        </CardTitle>
                         <CardDescription className="mt-1">
                           <span className="inline-flex items-center rounded-md bg-indigo-50 dark:bg-indigo-900/40 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
-                            {price}Ks per ticket
+                            {price}Ks per card
                           </span>
                         </CardDescription>
                       </div>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                        isDynamic
-                          ? 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                          : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      }`}>
-                        {isDynamic ? 'Dynamic' : 'Static'}
+                      <span
+                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                          isGamify
+                            ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                            : "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                        }`}
+                      >
+                        {isGamify ? "Gamify" : "Normal"}
                       </span>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-3 gap-3 text-xs">
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
-                        <div className="text-gray-500 dark:text-gray-400">Generated</div>
-                        <div className="mt-1 text-base font-semibold">{generated}</div>
+                        <div className="text-gray-500 dark:text-gray-400">
+                          Generated
+                        </div>
+                        <div className="mt-1 text-base font-semibold">
+                          {generated}
+                        </div>
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
-                        <div className="text-gray-500 dark:text-gray-400">Used</div>
-                        <div className="mt-1 text-base font-semibold">{batchCounts[batch.id]?.used ?? '—'}</div>
+                        <div className="text-gray-500 dark:text-gray-400">
+                          Used
+                        </div>
+                        <div className="mt-1 text-base font-semibold">
+                          {batchCounts[batch.id]?.used ?? "—"}
+                        </div>
                       </div>
                       <div className="rounded-md bg-gray-50 dark:bg-gray-800/60 p-3">
-                        <div className="text-gray-500 dark:text-gray-400">Unused</div>
-                        <div className="mt-1 text-base font-semibold">{batchCounts[batch.id]?.unused ?? '—'}</div>
+                        <div className="text-gray-500 dark:text-gray-400">
+                          Unused
+                        </div>
+                        <div className="mt-1 text-base font-semibold">
+                          {batchCounts[batch.id]?.unused ?? "—"}
+                        </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-3 pt-1">
-                      <Link to={`/batches/${batch.id}/tickets`} className="flex-1">
+                      <Link
+                        to={`/batches/${batch.id}/tickets`}
+                        className="flex-1"
+                      >
                         <Button className="w-full" variant="secondary">
                           <Eye className="mr-2 h-4 w-4" />
                           View
                         </Button>
                       </Link>
-                      <Link to={`/batches/layout/${batch.id}`} className="flex-1">
-                        <Button className="w-full" variant='outline' disabled={loading || generated === 0}>
+                      <Link
+                        to={`/batches/layout/${batch.id}`}
+                        className="flex-1"
+                      >
+                        <Button
+                          className="w-full"
+                          variant="outline"
+                          disabled={loading || generated === 0}
+                        >
                           <AppWindow className="mr-2 h-4 w-4" />
-                          Design Ticket
+                          Design Card
                         </Button>
                       </Link>
-                      {isDynamic && (
+                      {isGamify && (
                         <Button
                           className="flex-1"
                           variant="outline"

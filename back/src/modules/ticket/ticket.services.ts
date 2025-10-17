@@ -1,4 +1,11 @@
-import { AddDynamicDto, ScanDto, ticketDesignInfoDto, TicketCountDto, TicketDto, TicketSummaryDto } from "./ticket.dto";
+import {
+  AddDynamicDto,
+  ScanDto,
+  ticketDesignInfoDto,
+  TicketCountDto,
+  TicketDto,
+  TicketSummaryDto,
+} from "./ticket.dto";
 import { Ticket } from "./ticket.entity";
 import { BaseService } from "../../utils/base.services";
 import { v4 as uuidv4 } from "uuid";
@@ -76,12 +83,14 @@ export class TicketService extends BaseService<Ticket> {
         (collaborator) => collaborator.id === scanner.id
       )
     ) {
-      const err: any = new Error("You are not the ticket creator or collaborator");
+      const err: any = new Error(
+        "You are not the card creator or collaborator"
+      );
       err.status = 403;
       throw err;
     }
     if (ticket.status === "used") {
-      const err: any = new Error("Ticket already used");
+      const err: any = new Error("Card already used");
       err.status = 409;
       throw err;
     }
@@ -90,20 +99,11 @@ export class TicketService extends BaseService<Ticket> {
     return await this.repo.save(ticket);
   }
 
-  async getScannedTickets(userId: number) {
-  const tickets = await this.repo.find({
-    where: { scanner: { id: userId } },
-    relations: ["scanner"],
-  });
-
-  return tickets.map((t) => ({
-    code: t.code,
-    status: t.status,
-    scannerName: t.scanner.name,
-  }));
-}
-
-  async generateTicketWithCode(ticketDesignInfo: ticketDesignInfoDto, ticketfile: Express.Multer.File, batchId: number) {
+  async generateTicketWithCode(
+    ticketDesignInfo: ticketDesignInfoDto,
+    ticketfile: Express.Multer.File,
+    batchId: number
+  ) {
     if (!ticketfile) {
       throw new Error("No image uploaded.");
     }
@@ -121,7 +121,10 @@ export class TicketService extends BaseService<Ticket> {
     });
 
     const resizedBarcode = await sharp(barcodeBuffer)
-      .resize(parseInt(ticketDesignInfo.barcodeWidth), parseInt(ticketDesignInfo.barcodeHeight))
+      .resize(
+        parseInt(ticketDesignInfo.barcodeWidth),
+        parseInt(ticketDesignInfo.barcodeHeight)
+      )
       .toBuffer();
 
     // --- 2️⃣ Generate QR (only in dynamic mode)
@@ -147,7 +150,10 @@ export class TicketService extends BaseService<Ticket> {
 
     if (ticketDesignInfo.mode === "dynamic" && qrBuffer) {
       const resizedQR = await sharp(qrBuffer)
-        .resize(parseInt(ticketDesignInfo.qrWidth), parseInt(ticketDesignInfo.qrHeight))
+        .resize(
+          parseInt(ticketDesignInfo.qrWidth),
+          parseInt(ticketDesignInfo.qrHeight)
+        )
         .toBuffer();
 
       composites.push({
@@ -158,7 +164,11 @@ export class TicketService extends BaseService<Ticket> {
     }
 
     const thisBatchId = batchId;
-    const outputPath = path.join("temp", `batch-${thisBatchId}`, `final-${Date.now()}.png`);
+    const outputPath = path.join(
+      "temp",
+      `batch-${thisBatchId}`,
+      `final-${Date.now()}.png`
+    );
 
     await sharp(imagePath).composite(composites).toFile(outputPath);
 
@@ -169,27 +179,48 @@ export class TicketService extends BaseService<Ticket> {
 
   async getTicketCountByBatchId(batchId: number): Promise<TicketCountDto> {
     const total = await this.repo.count({ where: { batch: { id: batchId } } });
-    const used = await this.repo.count({ where: { batch: { id: batchId }, status: "used" } });
-    const unused = await this.repo.count({ where: { batch: { id: batchId }, status: "unused" } });
+    const used = await this.repo.count({
+      where: { batch: { id: batchId }, status: "used" },
+    });
+    const unused = await this.repo.count({
+      where: { batch: { id: batchId }, status: "unused" },
+    });
     return { batchId, total, used, unused };
   }
 
   async getTicketByBatch(batchId: number): Promise<TicketSummaryDto[]> {
-    // Determine if batch is dynamic
+    // 1. Find batch to check if dynamic
     const batch = await TicketBatchRepo.findOneByOrFail({ id: batchId });
     const isDynamic = !!batch.dynamic;
-    // Load tickets for batch
-    const tickets = await this.repo.find({ where: { batch: { id: batchId } } });
-    if (!isDynamic) {
-      // Static: only code and status
-      return tickets.map((t) => ({ code: t.code, status: t.status }));
-    }
-    // Dynamic: include qrUrl and dynamicResult when present
+    const batchPrice = batch.price ?? 0;
+    // 2. Load tickets with scanner relation
+    const tickets = await this.repo.find({
+      where: { batch: { id: batchId } },
+      relations: ["scanner"],
+    });
+
+    // 3. Map to DTO
     return tickets.map((t) => ({
       code: t.code,
       status: t.status,
-      qrUrl: t.qrUrl ?? null,
-      dynamicResult: t.dynamicResult ?? null,
+      scannerName: t.scanner?.name || "—",
+      qrUrl: isDynamic ? t.qrUrl ?? null : undefined,
+      dynamicResult: isDynamic ? t.dynamicResult ?? null : undefined,
+      price: batchPrice,
+    }));
+  }
+  async getScannedTickets(userId: number) {
+    const tickets = await this.repo.find({
+      where: { scanner: { id: userId } },
+      relations: ["scanner", "batch"],
+    });
+
+    return tickets.map((t) => ({
+      code: t.code,
+      status: t.status,
+      scannerName: t.scanner.name,
+      price: t.batch.price,
+      isDynamic: t.batch.dynamic,
     }));
   }
 }

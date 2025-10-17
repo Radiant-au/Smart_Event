@@ -58,7 +58,7 @@ const Login = () => {
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your SmartEvents account</CardDescription>
+          <CardDescription>Sign in to your Scanova account!</CardDescription>
         </CardHeader>
 
         <form onSubmit={handleSubmit}>

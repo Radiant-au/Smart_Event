@@ -113,7 +113,7 @@ const Dashboard = () => {
               Welcome back, {me?.name || "User"}!
             </h1>
             <p className="text-blue-100 text-lg">
-              Manage your events and tickets from your dashboard
+              Manage your cards and tickets from your dashboard
             </p>
           </div>
         </div>
@@ -123,15 +123,13 @@ const Dashboard = () => {
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Events
+                Total Group
               </CardTitle>
               <Calendar className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{userEvents.length}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Active events
-              </p>
+              <p className="text-xs text-muted-foreground mt-1">Active group</p>
             </CardContent>
           </Card>
 
@@ -139,7 +137,7 @@ const Dashboard = () => {
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Ticket Batches
+                Card Batches
               </CardTitle>
               <Ticket className="h-4 w-4 text-cyan-600" />
             </CardHeader>
@@ -155,14 +153,14 @@ const Dashboard = () => {
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total Tickets
+                Total Cards
               </CardTitle>
               <Ticket className="h-4 w-4 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{totalTicketsRemote}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Generated tickets
+                Generated cards
               </p>
             </CardContent>
           </Card>
@@ -171,14 +169,14 @@ const Dashboard = () => {
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Tickets Used
+                Cards Used
               </CardTitle>
               <Scan className="h-4 w-4 text-orange-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{usedTicketsRemote}</div>
               <p className="text-xs text-muted-foreground mt-1">
-                Scanned tickets
+                Scanned cards
               </p>
             </CardContent>
           </Card>
@@ -190,26 +188,26 @@ const Dashboard = () => {
             <CardHeader className="pb-3">
               <CardTitle>Quick Actions</CardTitle>
               <CardDescription>
-                Common tasks to manage your events
+                Common tasks to manage your cards
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link to="/events/create">
                 <Button className="w-full justify-start" variant="outline">
                   <Plus className="mr-2 h-4 w-4" />
-                  Create New Event
+                  Create Card
                 </Button>
               </Link>
               <Link to="/events">
                 <Button className="w-full justify-start" variant="outline">
                   <Calendar className="mr-2 h-4 w-4" />
-                  View All Events
+                  View Cards
                 </Button>
               </Link>
               <Link to="/scan" state={{ userId: me?.id }}>
                 <Button className="w-full justify-start" variant="outline">
                   <Scan className="mr-2 h-4 w-4" />
-                  Scan Tickets
+                  Scan Card
                 </Button>
               </Link>
             </CardContent>
@@ -218,8 +216,10 @@ const Dashboard = () => {
           <Card className="overflow-hidden border border-gray-200/60 dark:border-gray-800/60 hover:shadow-xl transition-shadow bg-white/60 dark:bg-gray-900/60 backdrop-blur">
             <div className="h-2 bg-gradient-to-r from-indigo-500 via-cyan-500 to-emerald-500" />
             <CardHeader className="pb-3">
-              <CardTitle>Recent Events</CardTitle>
-              <CardDescription>Your recently created events</CardDescription>
+              <CardTitle>Recent Card Groups</CardTitle>
+              <CardDescription>
+                Your recently created card groups
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {userEvents.length === 0 ? (
@@ -229,7 +229,7 @@ const Dashboard = () => {
                   <Link to="/events/create">
                     <Button className="mt-4" size="sm">
                       <Plus className="mr-2 h-4 w-4" />
-                      Create Your First Event
+                      Create Your First Card Group
                     </Button>
                   </Link>
                 </div>

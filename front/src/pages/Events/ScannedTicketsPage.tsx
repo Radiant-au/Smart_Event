@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   Card,
   CardContent,
@@ -8,44 +8,62 @@ import {
 } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { getTicketsByBatch, TicketSummaryDto } from "@/api/ticket-api";
 import Barcode from "react-barcode";
+import { getScannedTicketsByBatch } from "@/api/ticket-api";
 
-type FilterMode = "all" | "used" | "unused";
+type TicketDto = {
+  code: string;
+  status: string;
+  scannerName: string;
+  price: string;
+  isDynamic: boolean;
+};
 
-const TicketsPage = () => {
-  const { batchId } = useParams<{ batchId: string }>();
+type FilterMode = "all" | "normal" | "gamify";
+
+const ScannedTicketsPage = () => {
+  const { batchId } = useParams<{
+    batchId: string;
+  }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { collaboratorName?: string };
+  const collaboratorName = state?.collaboratorName;
+
   const [loading, setLoading] = useState(false);
-  const [tickets, setTickets] = useState<TicketSummaryDto[]>([]);
+  const [tickets, setTickets] = useState<TicketDto[]>([]);
   const [filter, setFilter] = useState<FilterMode>("all");
 
   useEffect(() => {
-    const load = async () => {
+    const loadTickets = async () => {
       if (!batchId) return;
       try {
         setLoading(true);
-        const res = await getTicketsByBatch(Number(batchId));
+        const res = await getScannedTicketsByBatch(Number(batchId));
         const data = (res as any).data?.data ?? res.data?.data ?? res.data;
-        setTickets(Array.isArray(data) ? data : []);
+
+        const usedTickets: TicketDto[] = Array.isArray(data)
+          ? data.map((t) => ({ ...t, status: "used" }))
+          : [];
+        setTickets(usedTickets);
       } finally {
         setLoading(false);
       }
     };
-    load();
+
+    loadTickets();
   }, [batchId]);
 
-  const filtered = useMemo(() => {
-    if (filter === "all") return tickets;
-    if (filter === "used") return tickets.filter((t) => t.status === "used");
-    return tickets.filter((t) => t.status !== "used"); // unused tickets
+  const filteredTickets = useMemo(() => {
+    switch (filter) {
+      case "normal":
+        return tickets.filter((t) => !t.isDynamic);
+      case "gamify":
+        return tickets.filter((t) => t.isDynamic);
+      default:
+        return tickets;
+    }
   }, [tickets, filter]);
-
-  // Determine if any ticket has dynamic fields
-  const showDynamicCols = useMemo(
-    () => tickets.some((t) => "qrUrl" in t),
-    [tickets]
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-gray-800">
@@ -56,7 +74,9 @@ const TicketsPage = () => {
         </Button>
 
         <div className="mb-6 flex items-center justify-between gap-4 flex-wrap">
-          <h1 className="text-2xl font-semibold">Tickets</h1>
+          <h1 className="text-2xl font-semibold">
+            Cards Scanned by {collaboratorName}
+          </h1>
           <div className="inline-flex gap-2">
             <Button
               variant={filter === "all" ? "default" : "outline"}
@@ -65,16 +85,16 @@ const TicketsPage = () => {
               All
             </Button>
             <Button
-              variant={filter === "used" ? "default" : "outline"}
-              onClick={() => setFilter("used")}
+              variant={filter === "normal" ? "default" : "outline"}
+              onClick={() => setFilter("normal")}
             >
-              Used
+              Normal
             </Button>
             <Button
-              variant={filter === "unused" ? "default" : "outline"}
-              onClick={() => setFilter("unused")}
+              variant={filter === "gamify" ? "default" : "outline"}
+              onClick={() => setFilter("gamify")}
             >
-              Unused
+              Gamify
             </Button>
           </div>
         </div>
@@ -82,7 +102,7 @@ const TicketsPage = () => {
         <Card>
           <CardHeader>
             <CardTitle>
-              Tickets ({loading ? "loading…" : filtered.length})
+              Tickets ({loading ? "loading…" : filteredTickets.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -90,7 +110,7 @@ const TicketsPage = () => {
               <div className="text-center py-10 text-muted-foreground">
                 Loading tickets…
               </div>
-            ) : filtered.length === 0 ? (
+            ) : filteredTickets.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground">
                 No tickets found
               </div>
@@ -104,26 +124,20 @@ const TicketsPage = () => {
                       <th className="py-2 pr-4">Status</th>
                       <th className="py-2 pr-4">Price</th>
                       <th className="py-2 pr-4">Scanner Name</th>
-                      {showDynamicCols && (
-                        <>
-                          <th className="py-2 pr-4">QR URL</th>
-                          <th className="py-2 pr-4">Gamify Result</th>
-                        </>
-                      )}
+                      <th className="py-2 pr-4">Type</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filtered.map((t, idx) => (
+                    {filteredTickets.map((ticket, idx) => (
                       <tr
                         key={idx}
                         className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50/60 dark:hover:bg-gray-900/40 transition-colors"
                       >
-                        <td className="py-2 pr-4 font-mono">{t.code}</td>
-
+                        <td className="py-2 pr-4 font-mono">{ticket.code}</td>
                         <td className="py-2 pr-4">
                           <div className="bg-white rounded inline-block p-1">
                             <Barcode
-                              value={t.code}
+                              value={ticket.code}
                               format="CODE128"
                               width={1}
                               height={32}
@@ -131,40 +145,22 @@ const TicketsPage = () => {
                             />
                           </div>
                         </td>
-
                         <td className="py-2 pr-4">
                           <button
                             className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide
-                              shadow-md transition-all duration-300 ease-in-out transform
-                              ${
-                                t.status === "used"
-                                  ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-red-300/40 hover:shadow-red-400/60 hover:scale-105"
-                                  : "bg-gradient-to-r from-green-500 to-green-600 text-white shadow-green-300/40 hover:shadow-green-400/60 hover:scale-105"
-                              }`}
+          shadow-md transition-all duration-300 ease-in-out transform
+          bg-gradient-to-r from-green-500 to-green-600 text-white shadow-green-300/40 hover:shadow-green-400/60 hover:scale-105`}
                           >
-                            {t.status}
+                            {ticket.status}
                           </button>
                         </td>
-
-                        <td className="py-2 pr-4 capitalize">
-                          {t.price || "—"}
+                        <td className="py-2 pr-4">{ticket.price}</td>
+                        <td className="py-2 pr-4">
+                          {ticket.scannerName || "—"}
                         </td>
-                        <td className="py-2 pr-4 capitalize">
-                          {t.scannerName || "—"}
+                        <td className="py-2 pr-4">
+                          {ticket.isDynamic ? "Gamify" : "Normal"}
                         </td>
-
-                        {showDynamicCols && (
-                          <>
-                            <td className="py-2 pr-4 truncate max-w-xs">
-                              {"qrUrl" in t ? t.qrUrl || "—" : "—"}
-                            </td>
-                            <td className="py-2 pr-4">
-                              {"dynamicResult" in t
-                                ? t.dynamicResult || "—"
-                                : "—"}
-                            </td>
-                          </>
-                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -178,4 +174,4 @@ const TicketsPage = () => {
   );
 };
 
-export default TicketsPage;
+export default ScannedTicketsPage;

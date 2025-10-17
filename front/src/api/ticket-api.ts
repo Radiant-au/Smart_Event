@@ -37,6 +37,8 @@ export const getTicketCountByBatchId = async (batchId: number) => {
 };
 
 export interface TicketSummaryDto {
+  price: string;
+  scannerName: String;
   code: string;
   status: string;
   qrUrl?: string | null;
@@ -46,5 +48,11 @@ export interface TicketSummaryDto {
 export const getTicketsByBatch = async (batchId: number) => {
   return apiClient.get<{ success: boolean; data: TicketSummaryDto[] }>(
     `/ticket/by-batch/${batchId}`
+  );
+};
+
+export const getScannedTicketsByBatch = async (batchId: number) => {
+  return apiClient.get<{ success: boolean; data: TicketSummaryDto[] }>(
+    `/ticket/scanned/${batchId}`
   );
 };
