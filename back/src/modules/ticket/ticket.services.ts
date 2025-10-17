@@ -9,6 +9,7 @@ import sharp from "sharp";
 import fs from "fs";
 import path from "path";
 import { TicketBatchRepo } from "../ticket_batch/ticket_batch.repo";
+import { UserRepo } from "../user/user.repo";
 
 export class TicketService extends BaseService<Ticket> {
   private rouletteResultRepo = RouletteResultRepo;
@@ -68,11 +69,11 @@ export class TicketService extends BaseService<Ticket> {
       err.status = 404;
       throw err;
     }
-    const scanner = Number(dto.userId);
+    const scanner = await UserRepo.findOneOrFail({ where: { id: dto.userId } });
     if (
-      scanner !== ticket.batch.event.creator.id &&
+      scanner.id !== ticket.batch.event.creator.id &&
       !ticket.batch.event.collaborators.some(
-        (collaborator) => collaborator.id === scanner
+        (collaborator) => collaborator.id === scanner.id
       )
     ) {
       const err: any = new Error("You are not the ticket creator or collaborator");
@@ -84,9 +85,23 @@ export class TicketService extends BaseService<Ticket> {
       err.status = 409;
       throw err;
     }
+    ticket.scanner = scanner;
     ticket.status = "used";
     return await this.repo.save(ticket);
   }
+
+  async getScannedTickets(userId: number) {
+  const tickets = await this.repo.find({
+    where: { scanner: { id: userId } },
+    relations: ["scanner"],
+  });
+
+  return tickets.map((t) => ({
+    code: t.code,
+    status: t.status,
+    scannerName: t.scanner.name,
+  }));
+}
 
   async generateTicketWithCode(ticketDesignInfo: ticketDesignInfoDto, ticketfile: Express.Multer.File, batchId: number) {
     if (!ticketfile) {

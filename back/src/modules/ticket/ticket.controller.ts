@@ -31,4 +31,10 @@ export class TicketController {
         const tickets = await this.ticketService.getTicketByBatch(batchId);
         res.status(200).json({ success: true, data: tickets });
     });
+
+    getScannedTickets = asyncHandler(async (req: Request, res: Response) => {
+        const userId = Number(req.params.userId);
+        const tickets = await this.ticketService.getScannedTickets(userId);
+        res.status(200).json({ success: true, data: tickets });
+    });
 }
