@@ -1,5 +1,6 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { TicketBatch } from "../ticket_batch/ticket_batch.entity";
+import { User } from "../user/user.entity";
 
 @Entity()
 export class Ticket {
@@ -14,6 +15,9 @@ export class Ticket {
 
   @Column({ default: "unused" })
   status!: string; // unused | used
+
+  @ManyToOne(() => User)
+  scanner!: User;
 
   @Column({ nullable: true })
   qrToken?: string;

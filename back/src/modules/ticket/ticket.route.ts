@@ -9,5 +9,6 @@ router.post("/dynamic/:token", ticketController.addDynamicData);
 router.post("/validate", ticketController.validateScan);
 router.get("/count/:batchId", ticketController.getTicketCountByBatchId);
 router.get("/by-batch/:batchId", ticketController.getTicketByBatch);
+router.get("/scanned/:userId", ticketController.getScannedTickets);
 
 export default router;
